@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DREADCRAFT // Horror Addon Forge</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Creepster&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --void:#0a0908;
+  --panel:#131110;
+  --panel-2:#1a1615;
+  --blood:#8a1414;
+  --blood-bright:#c81e1e;
+  --rot:#5c6e3a;
+  --rot-bright:#8aa855;
+  --bone:#d4c9b6;
+  --bone-dim:#8a8074;
+  --warden:#3a2350;
+  --warden-bright:#6b3fa0;
+  --line: rgba(212,201,182,0.09);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--void);
+  color:var(--bone);
+  font-family:'IBM Plex Mono',monospace;
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+/* film grain */
+body::before{
+  content:"";
+  position:fixed; inset:0;
+  pointer-events:none;
+  z-index:9990;
+  opacity:0.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode:overlay;
+}
+.vignette{
+  position:fixed; inset:0; pointer-events:none; z-index:9989;
+  background:radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
+}
+
+header.hero{
+  padding:64px 40px 40px;
+  border-bottom:1px solid var(--line);
+  position:relative;
+}
+.eyebrow{
+  font-size:11px; letter-spacing:0.35em; text-transform:uppercase;
+  color:var(--blood-bright); margin:0 0 14px;
+  display:flex; align-items:center; gap:10px;
+}
+.eyebrow::before{content:"●"; color:var(--blood-bright); animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.25;}}
+h1.title{
+  font-family:'Creepster',cursive;
+  font-weight:400;
+  font-size:clamp(38px,7vw,84px);
+  letter-spacing:2px;
+  margin:0;
+  color:var(--bone);
+  text-shadow:0 0 18px rgba(200,30,30,0.45), 3px 3px 0 var(--blood);
+  line-height:0.95;
+}
+.title .glitch-slice{color:var(--rot-bright); text-shadow:0 0 18px rgba(90,110,50,0.5);}
+p.sub{
+  max-width:620px; color:var(--bone-dim); font-size:14px; line-height:1.7;
+  margin:18px 0 0; font-weight:400;
+}
+
+.layout{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  min-height:calc(100vh - 220px);
+}
+nav.tabs{
+  border-right:1px solid var(--line);
+  padding:28px 0;
+  position:sticky; top:0; align-self:start;
+}
+nav.tabs button{
+  display:flex; align-items:center; gap:10px;
+  width:100%; text-align:left;
+  background:none; border:none; color:var(--bone-dim);
+  font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:0.03em;
+  padding:14px 28px; cursor:pointer;
+  border-left:2px solid transparent;
+  transition:all 0.15s;
+}
+nav.tabs button .num{color:var(--bone-dim); font-size:11px; opacity:0.5;}
+nav.tabs button:hover{color:var(--bone); background:rgba(255,255,255,0.02);}
+nav.tabs button.active{
+  color:var(--bone); border-left-color:var(--blood-bright);
+  background:linear-gradient(90deg, rgba(138,20,20,0.12), transparent);
+}
+nav.tabs button.active .num{color:var(--blood-bright); opacity:1;}
+
+main{padding:40px 44px 100px; max-width:920px;}
+.panel-title{
+  font-size:20px; margin:0 0 6px; color:var(--bone); letter-spacing:0.02em;
+  display:flex; align-items:center; gap:12px;
+}
+.panel-desc{color:var(--bone-dim); font-size:13px; margin:0 0 30px; line-height:1.6;}
+
+label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--bone-dim); margin-bottom:6px;}
+input[type=text], input[type=number], select, textarea{
+  width:100%; background:var(--panel); border:1px solid var(--line); color:var(--bone);
+  font-family:'IBM Plex Mono',monospace; font-size:13px; padding:10px 12px; border-radius:2px;
+  outline:none; transition:border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus{border-color:var(--blood-bright);}
+textarea{resize:vertical; min-height:60px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+.field{margin-bottom:16px;}
+.hint{font-size:11px; color:var(--bone-dim); margin-top:5px; opacity:0.75;}
+
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:3px;
+  padding:22px; margin-bottom:18px; position:relative;
+  border-left:3px solid var(--blood);
+}
+.card.card-rot{border-left-color:var(--rot);}
+.card.card-warden{border-left-color:var(--warden-bright);}
+.card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+.card-head .name{font-size:14px; color:var(--bone); font-weight:600;}
+.card-head .tag{font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--bone-dim); border:1px solid var(--line); padding:3px 8px; border-radius:20px;}
+
+button.ghost{
+  background:none; border:1px solid var(--line); color:var(--bone-dim);
+  font-family:'IBM Plex Mono',monospace; font-size:12px; padding:8px 14px; border-radius:2px; cursor:pointer;
+  transition:all 0.15s;
+}
+button.ghost:hover{border-color:var(--blood-bright); color:var(--bone); background:rgba(138,20,20,0.1);}
+button.danger:hover{border-color:var(--blood-bright); color:var(--blood-bright);}
+button.add-btn{
+  background:var(--panel-2); border:1px dashed var(--line); color:var(--bone-dim);
+  width:100%; padding:14px; font-family:'IBM Plex Mono',monospace; font-size:13px;
+  cursor:pointer; border-radius:3px; letter-spacing:0.04em; transition:all 0.15s;
+}
+button.add-btn:hover{border-color:var(--rot-bright); color:var(--rot-bright);}
+button.primary{
+  background:var(--blood); border:1px solid var(--blood-bright); color:var(--bone);
+  font-family:'IBM Plex Mono',monospace; font-size:13px; padding:12px 22px; letter-spacing:0.05em;
+  cursor:pointer; border-radius:2px; text-transform:uppercase; transition:all 0.15s;
+}
+button.primary:hover{background:var(--blood-bright); box-shadow:0 0 22px rgba(200,30,30,0.4);}
+
+/* jumpscare test monitor - signature element */
+.monitor{
+  border:1px solid var(--line); background:#000; border-radius:4px; overflow:hidden;
+  position:relative; margin-bottom:24px; aspect-ratio:16/7;
+  display:flex; align-items:center; justify-content:center;
+}
+.monitor::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,0.25) 0px, rgba(0,0,0,0.25) 1px, transparent 1px, transparent 3px);
+  opacity:0.5;
+}
+.monitor .rec{
+  position:absolute; top:12px; left:14px; font-size:11px; color:#a33; letter-spacing:0.1em;
+  display:flex; align-items:center; gap:6px; z-index:2;
+}
+.monitor .rec::before{content:"●"; animation:pulse 1s infinite;}
+.monitor .timestamp{
+  position:absolute; bottom:12px; right:14px; font-size:11px; color:#6a6a6a; z-index:2;
+}
+.monitor .idle-txt{color:#3a3a3a; font-size:13px; letter-spacing:0.08em;}
+.monitor .flash-txt{
+  font-family:'Creepster',cursive; font-size:44px; color:#fff; text-align:center;
+  text-shadow:0 0 30px #f00, 0 0 60px #f00;
+}
+.monitor.flashing{animation:flashbg 0.08s steps(1) 6;}
+@keyframes flashbg{
+  0%{background:#fff;} 20%{background:#900;} 40%{background:#000;} 60%{background:#fff;} 80%{background:#600;} 100%{background:#000;}
+}
+.monitor.flashing .flash-txt{animation:shake 0.06s linear infinite;}
+@keyframes shake{
+  0%{transform:translate(0,0) skew(0deg);} 25%{transform:translate(-6px,3px) skew(-3deg);}
+  50%{transform:translate(5px,-4px) skew(2deg);} 75%{transform:translate(-4px,2px) skew(-1deg);} 100%{transform:translate(0,0);}
+}
+
+pre.code{
+  background:#050505; border:1px solid var(--line); border-radius:3px;
+  padding:16px; font-size:11.5px; line-height:1.6; overflow-x:auto; color:var(--rot-bright);
+  max-height:340px; overflow-y:auto;
+}
+.filetree{font-size:12.5px; line-height:2; color:var(--bone-dim);}
+.filetree .f{color:var(--bone);}
+.filetree .dir{color:var(--blood-bright);}
+.empty-state{
+  text-align:center; padding:50px 20px; color:var(--bone-dim); font-size:13px;
+  border:1px dashed var(--line); border-radius:4px;
+}
+.section-label{font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--rot-bright); margin:28px 0 12px; display:flex; align-items:center; gap:10px;}
+.section-label::after{content:""; flex:1; height:1px; background:var(--line);}
+</style>
+</head>
+<body>
+<div class="vignette"></div>
+
+<header class="hero">
+  <p class="eyebrow">Bedrock Addon Toolsmith</p>
+  <h1 class="title">DREAD<span class="glitch-slice">CRAFT</span></h1>
+  <p class="sub">Rakit addon horor Minecraft PE-mu di sini: mob jahat/baik, item pemicu, dan jumpscare lengkap dengan suara serta getaran layar. Semua diekspor jadi behavior pack siap pakai.</p>
+</header>
+
+<div class="layout">
+  <nav class="tabs" id="tabs"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+// ---------- STATE ----------
+const state = {
+  tab: 'info',
+  info: { name:'Shadow of the Deep', description:'Addon horor dengan mob jahat, item pemicu, dan jumpscare.', author:'Anonymous', packColor:'blood' },
+  mobs: [],
+  items: [],
+  jumpscares: []
+};
+const uid = () => Math.random().toString(36).slice(2,9);
+const BASE_MOBS = ['zombie','skeleton','warden','husk','drowned','creeper','enderman','phantom','vindicator','custom'];
+
+function newMob(){
+  return { id:uid(), name:'Pengintai Bayangan', baseType:'zombie', behavior:'hostile',
+    health:20, damage:5, speed:1.0, sound:'mob.zombie.say', jumpscareOnSpawn:'' };
+}
+function newItem(){
+  return { id:uid(), name:'Lonceng Terkutuk', baseItem:'bell', trigger:'use',
+    linkedJumpscare:'', cooldownTicks:100 };
+}
+function newJumpscare(){
+  return { id:uid(), name:'Wajah di Kegelapan', soundEvent:'mob.wither.spawn',
+    screenText:'DIA MELIHATMU', shakeIntensity:0.8, shakeDuration:1.2, particle:'minecraft:large_smoke', cooldown:5 };
+}
+
+// ---------- TABS ----------
+const TABS = [
+  {id:'info', label:'Info Addon', num:'01'},
+  {id:'mobs', label:'Mob', num:'02'},
+  {id:'items', label:'Item Pemicu', num:'03'},
+  {id:'jumpscares', label:'Jumpscare', num:'04'},
+  {id:'export', label:'Ekspor', num:'05'},
+];
+
+function renderTabs(){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = TABS.map(t => `
+    <button class="${state.tab===t.id?'active':''}" data-tab="${t.id}">
+      <span class="num">${t.num}</span> ${t.label}
+    </button>`).join('');
+  nav.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=>{ state.tab=b.dataset.tab; renderAll(); });
+  });
+}
+
+function renderAll(){
+  renderTabs();
+  const main = document.getElementById('main');
+  if(state.tab==='info') main.innerHTML = viewInfo();
+  if(state.tab==='mobs') main.innerHTML = viewMobs();
+  if(state.tab==='items') main.innerHTML = viewItems();
+  if(state.tab==='jumpscares') main.innerHTML = viewJumpscares();
+  if(state.tab==='export') main.innerHTML = viewExport();
+  bindEvents();
+}
+
+// ---------- VIEWS ----------
+function viewInfo(){
+  return `
+    <h2 class="panel-title">🩸 Info Addon</h2>
+    <p class="panel-desc">Identitas dasar behavior pack. Nama ini akan muncul di daftar addon dalam game.</p>
+    <div class="field"><label>Nama Addon</label><input type="text" id="i-name" value="${esc(state.info.name)}"></div>
+    <div class="field"><label>Deskripsi</label><textarea id="i-desc">${esc(state.info.description)}</textarea></div>
+    <div class="grid2">
+      <div class="field"><label>Author</label><input type="text" id="i-author" value="${esc(state.info.author)}"></div>
+      <div class="field"><label>Tema Warna Pack</label>
+        <select id="i-color">
+          <option value="blood" ${state.info.packColor==='blood'?'selected':''}>Merah Darah</option>
+          <option value="rot" ${state.info.packColor==='rot'?'selected':''}>Hijau Busuk (Zombie/Warden)</option>
+          <option value="void" ${state.info.packColor==='void'?'selected':''}>Ungu Void (Enderman)</option>
+        </select>
+      </div>
+    </div>
+    <p class="hint">Ringkasan: ${state.mobs.length} mob, ${state.items.length} item pemicu, ${state.jumpscares.length} jumpscare dikonfigurasi.</p>
+  `;
+}
+
+function viewMobs(){
+  const cards = state.mobs.map(m=>`
+    <div class="card ${m.baseType==='warden'?'card-warden':(m.behavior==='passive'?'card-rot':'')}" data-id="${m.id}">
+      <div class="card-head">
+        <span class="name">${esc(m.name)||'(tanpa nama)'}</span>
+        <span class="tag">${m.baseType} · ${m.behavior}</span>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Nama Mob</label><input type="text" class="m-name" value="${esc(m.name)}"></div>
+        <div class="field"><label>Mob Dasar</label>
+          <select class="m-base">${BASE_MOBS.map(b=>`<option value="${b}" ${m.baseType===b?'selected':''}>${b}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Sifat</label>
+          <select class="m-behavior">
+            <option value="hostile" ${m.behavior==='hostile'?'selected':''}>Jahat (menyerang)</option>
+            <option value="passive" ${m.behavior==='passive'?'selected':''}>Baik (damai)</option>
+            <option value="neutral" ${m.behavior==='neutral'?'selected':''}>Netral (menyerang jika diserang)</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Health</label><input type="number" class="m-health" value="${m.health}" min="1"></div>
+        <div class="field"><label>Damage Serangan</label><input type="number" class="m-damage" value="${m.damage}" min="0"></div>
+        <div class="field"><label>Kecepatan (x)</label><input type="number" step="0.1" class="m-speed" value="${m.speed}" min="0.1"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Suara Ambient</label><input type="text" class="m-sound" value="${esc(m.sound)}" placeholder="mob.zombie.say"></div>
+        <div class="field"><label>Trigger Jumpscare Saat Muncul</label>
+          <select class="m-jumpscare">
+            <option value="">— Tidak ada —</option>
+            ${state.jumpscares.map(j=>`<option value="${j.id}" ${m.jumpscareOnSpawn===j.id?'selected':''}>${esc(j.name)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <button class="ghost danger m-remove">Hapus Mob</button>
+    </div>
+  `).join('');
+
+  return `
+    <h2 class="panel-title">👹 Mob</h2>
+    <p class="panel-desc">Tentukan mob jahat atau baik, dibangun dari mob dasar vanilla (zombie, skeleton, warden, dsb) dengan statistik dan suara custom.</p>
+    ${state.mobs.length ? cards : `<div class="empty-state">Belum ada mob. Tambahkan mob pertamamu.</div>`}
+    <button class="add-btn" id="add-mob">+ Tambah Mob</button>
+  `;
+}
+
+function viewItems(){
+  const cards = state.items.map(it=>`
+    <div class="card" data-id="${it.id}">
+      <div class="card-head">
+        <span class="name">${esc(it.name)||'(tanpa nama)'}</span>
+        <span class="tag">${it.trigger}</span>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Nama Item</label><input type="text" class="it-name" value="${esc(it.name)}"></div>
+        <div class="field"><label>Item Dasar</label><input type="text" class="it-base" value="${esc(it.baseItem)}" placeholder="bell, stick, compass, dst"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Pemicu Saat</label>
+          <select class="it-trigger">
+            <option value="use" ${it.trigger==='use'?'selected':''}>Item digunakan (klik kanan)</option>
+            <option value="hit_entity" ${it.trigger==='hit_entity'?'selected':''}>Item memukul mob</option>
+            <option value="place" ${it.trigger==='place'?'selected':''}>Item dipakai ke blok (mis. ditaruh)</option>
+          </select>
+        </div>
+        <div class="field"><label>Cooldown (tick)</label><input type="number" class="it-cooldown" value="${it.cooldownTicks}" min="0"></div>
+      </div>
+      <div class="field"><label>Jumpscare Terhubung</label>
+        <select class="it-jumpscare">
+          <option value="">— Pilih jumpscare —</option>
+          ${state.jumpscares.map(j=>`<option value="${j.id}" ${it.linkedJumpscare===j.id?'selected':''}>${esc(j.name)}</option>`).join('')}
+        </select>
+      </div>
+      <button class="ghost danger it-remove">Hapus Item</button>
+    </div>
+  `).join('');
+
+  return `
+    <h2 class="panel-title">🔔 Item Pemicu</h2>
+    <p class="panel-desc">Item yang bila dipakai/dipukulkan akan memicu jumpscare yang sudah kamu buat.</p>
+    ${state.items.length ? cards : `<div class="empty-state">Belum ada item pemicu.</div>`}
+    <button class="add-btn" id="add-item">+ Tambah Item</button>
+  `;
+}
+
+function viewJumpscares(){
+  const cards = state.jumpscares.map(j=>`
+    <div class="card card-warden" data-id="${j.id}">
+      <div class="card-head">
+        <span class="name">${esc(j.name)||'(tanpa nama)'}</span>
+        <span class="tag">cooldown ${j.cooldown}s</span>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Nama Jumpscare</label><input type="text" class="j-name" value="${esc(j.name)}"></div>
+        <div class="field"><label>Sound Event</label><input type="text" class="j-sound" value="${esc(j.soundEvent)}" placeholder="mob.wither.spawn"></div>
+      </div>
+      <div class="field"><label>Teks di Layar</label><input type="text" class="j-text" value="${esc(j.screenText)}"></div>
+      <div class="grid3">
+        <div class="field"><label>Intensitas Guncangan</label><input type="number" step="0.1" class="j-shake-i" value="${j.shakeIntensity}" min="0" max="1"></div>
+        <div class="field"><label>Durasi Guncangan (dtk)</label><input type="number" step="0.1" class="j-shake-d" value="${j.shakeDuration}" min="0"></div>
+        <div class="field"><label>Cooldown (dtk)</label><input type="number" class="j-cooldown" value="${j.cooldown}" min="0"></div>
+      </div>
+      <div class="field"><label>Partikel</label><input type="text" class="j-particle" value="${esc(j.particle)}" placeholder="minecraft:large_smoke"></div>
+      <p class="hint">Perintah in-game: <code>/scriptevent dreadcraft:scare_${slug(j.name)}</code> · eksperimental: <code>/dreadcraft:scare ${slug(j.name)}</code> (butuh Beta APIs)</p>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="ghost j-test">▶ Uji Coba</button>
+        <button class="ghost danger j-remove">Hapus</button>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <h2 class="panel-title">📼 Jumpscare</h2>
+    <p class="panel-desc">Efek kaget: suara, teks layar, guncangan kamera, dan partikel. Selain dipicu dari mob/item, tiap jumpscare otomatis bisa dipanggil lewat command in-game (<code>/scriptevent</code>, atau slash command kustom eksperimental via Beta API) — cocok untuk command block, tripwire, atau NPC dialogue.</p>
+    <div class="monitor" id="monitor">
+      <div class="rec">REC</div>
+      <div class="timestamp" id="timestamp">00:00:00</div>
+      <div class="idle-txt" id="monitor-content">— sinyal tenang —</div>
+    </div>
+    ${state.jumpscares.length ? cards : `<div class="empty-state">Belum ada jumpscare. Buat efek kaget pertamamu.</div>`}
+    <button class="add-btn" id="add-jumpscare">+ Tambah Jumpscare</button>
+  `;
+}
+
+function viewExport(){
+  const files = buildFiles();
+  const treeLines = Object.keys(files).sort().map(p=>{
+    const depth = p.split('/').length-1;
+    const fname = p.split('/').pop();
+    return `<div style="padding-left:${depth*16}px" class="f">${fname}</div>`;
+  }).join('');
+  const preview = files['manifest.json'] || '';
+  return `
+    <h2 class="panel-title">📦 Ekspor Behavior Pack</h2>
+    <p class="panel-desc">File di bawah ini siap dimasukkan ke folder <em>com.mojang/development_behavior_packs/</em> di perangkatmu (via ZIP, lalu ekstrak).</p>
+    <div class="section-label">Struktur File</div>
+    <div class="filetree">${treeLines || '<div class="empty-state">Tambahkan mob/item/jumpscare dulu.</div>'}</div>
+    <div class="section-label">Pratinjau manifest.json</div>
+    <pre class="code">${esc(preview)}</pre>
+    <div class="section-label">Unduh</div>
+    <p class="hint" style="margin-bottom:14px;">ZIP berisi manifest, entity mob, item pemicu, fungsi jumpscare (.mcfunction), dan README cara pasang.</p>
+    <button class="primary" id="download-zip">⬇ Unduh Addon (.zip)</button>
+  `;
+}
+
+// ---------- HELPERS ----------
+function esc(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function slug(s){ return String(s||'addon').toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || 'addon'; }
+
+function buildFiles(){
+  const files = {};
+  const packSlug = slug(state.info.name);
+  const uuidHeader = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
+  const uuidModule = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
+
+  const uuidScriptModule = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
+
+  files['manifest.json'] = JSON.stringify({
+    format_version: 2,
+    header: {
+      name: state.info.name,
+      description: state.info.description,
+      uuid: uuidHeader,
+      version: [1,0,0],
+      min_engine_version: [1,21,80]
+    },
+    modules: [
+      { type: "data", uuid: uuidModule, version: [1,0,0] },
+      { type: "script", language: "javascript", uuid: uuidScriptModule, entry: "scripts/main.js", version: [1,0,0] }
+    ],
+    dependencies: [
+      { module_name: "@minecraft/server", version: "2.0.0-beta" }
+    ]
+  }, null, 2);
+
+  files['README.txt'] =
+`DREADCRAFT — ${state.info.name}
+Dibuat oleh: ${state.info.author}
+
+CARA PASANG:
+1. Salin seluruh isi folder ini ke:
+   com.mojang/development_behavior_packs/${packSlug}/
+2. Buat dunia baru (atau buka dunia yang sudah ada Beta API sebelumnya),
+   lalu di pengaturan dunia -> Experiments, AKTIFKAN toggle "Beta APIs".
+   Ini WAJIB agar file scripts/main.js dan command kustom bisa jalan.
+3. Aktifkan pack ini di Behavior Packs dunia tersebut.
+4. Untuk mob & item bekerja penuh, jalankan sekali di dunia:
+   /function init
+
+CARA MEMICU JUMPSCARE LEWAT COMMAND:
+- Cara paling stabil (tidak butuh Beta APIs, cukup cheat aktif):
+    /scriptevent dreadcraft:scare_<id_jumpscare>
+  Contoh: /scriptevent dreadcraft:scare_wajah_di_kegelapan
+- Cara eksperimental (custom slash command, BUTUH Beta APIs aktif):
+    /dreadcraft:scare <id_jumpscare>
+  Command ini muncul di autocomplete chat setelah pack dimuat.
+- Daftar id_jumpscare tiap jumpscare ada di tab "Jumpscare" pada alat ini,
+  dan juga tertulis sebagai komentar di scripts/main.js.
+- Command ini juga bisa dipanggil dari command block, NPC dialogue,
+  atau addon lain — cocok untuk trigger area/tripwire/redstone.
+
+CATATAN PENTING:
+- Mob dibuat sebagai entity baru (bukan menimpa mob vanilla), jadi
+  mob lain di dunia tidak berubah. Tampilan/model & animasinya
+  meminjam dari mob dasar yang dipilih (lewat runtime_identifier),
+  tapi statistik (health, damage, speed) dan perilaku (jahat/baik/
+  netral) sudah 100% custom sesuai pengaturanmu.
+- Ikon item memakai nama tekstur yang kamu isi. Tanpa resource pack
+  pendamping (item_texture.json + gambar), item akan tampil dengan
+  ikon default/placeholder — addon tetap berfungsi penuh, hanya
+  tampilannya belum custom.
+- Fitur command kustom (/dreadcraft:scare) memakai Script API versi
+  2.0.0-beta yang MASIH EKSPERIMENTAL dari Mojang — sintaksnya bisa
+  berubah di update Minecraft berikutnya. Jika suatu saat command ini
+  berhenti bekerja setelah update game, gunakan /scriptevent sebagai
+  cadangan (lebih stabil dan sudah lama tersedia).
+- Uji di dunia Creative dengan cheat aktif dulu sebelum dipakai di
+  dunia utama. Panggil mob dengan: /summon dreadcraft:<nama_mob>
+
+Isi:
+- entities/  -> definisi tiap mob (dasar dari mob vanilla)
+- items/     -> definisi tiap item pemicu
+- functions/ -> logika jumpscare berbasis command (suara, guncangan, partikel, teks)
+- scripts/   -> pemicu jumpscare lewat command (scriptevent + custom command Beta API)
+`;
+
+  // collision box presets per base mob so the entity has a sane hitbox in-game
+  const HITBOX = {
+    zombie:{w:0.6,h:1.95}, husk:{w:0.6,h:1.95}, drowned:{w:0.6,h:1.95},
+    skeleton:{w:0.6,h:1.99}, warden:{w:0.9,h:2.9}, creeper:{w:0.6,h:1.7},
+    enderman:{w:0.6,h:2.9}, phantom:{w:0.9,h:0.5}, vindicator:{w:0.6,h:1.95},
+    custom:{w:0.6,h:1.95}
+  };
+
+  // entities
+  state.mobs.forEach(m=>{
+    const id = `dreadcraft:${slug(m.name)}`;
+    const box = HITBOX[m.baseType] || HITBOX.custom;
+    const isHostile = m.behavior==='hostile';
+    const isNeutral = m.behavior==='neutral';
+    const canFly = m.baseType==='phantom';
+
+    const components = {
+      "minecraft:type_family": { "family": [isHostile ? 'monster' : 'mob', m.baseType] },
+      "minecraft:health": { "value": Number(m.health)||20, "max": Number(m.health)||20 },
+      "minecraft:attack": { "damage": Number(m.damage)||0 },
+      "minecraft:collision_box": { "width": box.w, "height": box.h },
+      "minecraft:physics": {},
+      "minecraft:pushable": { "is_pushable": true, "is_pushable_by_piston": true },
+      "minecraft:knockback_resistance": { "value": 0 },
+      "minecraft:movement": { "value": Number(m.speed)||1.0 },
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:navigation.walk": { "can_path_over_water": true, "avoid_water": !canFly, "avoid_damage_blocks": true },
+      "minecraft:behavior.float": { "priority": 0 },
+      "minecraft:behavior.random_stroll": { "priority": 6, "speed_multiplier": 1.0 },
+      "minecraft:behavior.random_look_around": { "priority": 8 },
+      "minecraft:behavior.look_at_player": { "priority": 7, "look_distance": 8, "probability": 0.02 },
+      "minecraft:is_hidden_when_invisible": {}
+    };
+    if(isHostile || isNeutral){
+      components["minecraft:behavior.hurt_by_target"] = { "priority": 1 };
+      components["minecraft:behavior.melee_attack"] = { "priority": 3, "speed_multiplier": 1.0, "track_target": true };
+    }
+    if(isHostile){
+      components["minecraft:behavior.nearest_attackable_target"] = {
+        "priority": 2, "within_radius": 16, "must_see": true,
+        "entity_types": [{ "filters": { "test":"is_family","subject":"other","value":"player" }, "max_dist": 16 }]
+      };
+    }
+
+    files[`entities/${slug(m.name)}.json`] = JSON.stringify({
+      "format_version": "1.20.0",
+      "minecraft:entity": {
+        "description": {
+          "identifier": id,
+          "is_spawnable": true,
+          "is_summonable": true,
+          "runtime_identifier": `minecraft:${m.baseType==='custom'?'zombie':m.baseType}`
+        },
+        "components": components,
+        "component_groups": m.jumpscareOnSpawn ? {
+          "dreadcraft:on_spawn_scare": {
+            "minecraft:timer": {
+              "time": 0.1, "looping": false,
+              "time_down_event": { "event": "dreadcraft:run_spawn_scare", "target": "self" }
+            }
+          }
+        } : undefined,
+        "events": m.jumpscareOnSpawn ? {
+          "minecraft:entity_spawned": { "add": { "component_groups": ["dreadcraft:on_spawn_scare"] } },
+          "dreadcraft:run_spawn_scare": {
+            "run_command": { "command": [`function jumpscares/${slug(jumpscareName(m.jumpscareOnSpawn))}`] }
+          }
+        } : undefined
+      }
+    }, null, 2);
+  });
+
+  // items — map each trigger type to its real Bedrock item component + event key
+  const TRIGGER_MAP = {
+    use:        { component: 'minecraft:on_use',        key: 'on_use' },
+    hit_entity: { component: 'minecraft:on_hit_entity',  key: 'on_hit' },
+    place:      { component: 'minecraft:on_use_on',      key: 'on_use' } // "diletakkan/dipakai pada blok"
+  };
+  state.items.forEach(it=>{
+    const id = `dreadcraft:${slug(it.name)}`;
+    const map = TRIGGER_MAP[it.trigger] || TRIGGER_MAP.use;
+    files[`items/${slug(it.name)}.json`] = JSON.stringify({
+      "format_version": "1.20.0",
+      "minecraft:item": {
+        "description": { "identifier": id, "category": "items" },
+        "components": {
+          "minecraft:max_stack_size": 1,
+          "minecraft:cooldown": { "category": slug(it.name), "duration": (Number(it.cooldownTicks)||0)/20 },
+          "minecraft:icon": { "texture": slug(it.baseItem) || "stick" },
+          "minecraft:hand_equipped": true,
+          [map.component]: { [map.key]: { "event": "dreadcraft:trigger_scare", "target": "self" } }
+        },
+        "events": {
+          "dreadcraft:trigger_scare": {
+            "run_command": {
+              "command": [ it.linkedJumpscare ? `function jumpscares/${slug(jumpscareName(it.linkedJumpscare))}` : "say (belum ada jumpscare terhubung)" ]
+            }
+          }
+        }
+      }
+    }, null, 2);
+  });
+
+  // jumpscare functions
+  state.jumpscares.forEach(j=>{
+    const fname = slug(j.name);
+    files[`functions/jumpscares/${fname}.mcfunction`] =
+`# Jumpscare: ${j.name}
+# Cooldown yang disarankan: ${j.cooldown} detik (atur sendiri via scoreboard jika perlu)
+playsound ${j.soundEvent||'mob.wither.spawn'} @a ~ ~ ~ 1 0.6
+camerashake add @a ${j.shakeIntensity||0.8} ${j.shakeDuration||1} positional
+title @a title §4§l${(j.screenText||'').toUpperCase()}
+title @a subtitle §7...
+particle ${j.particle||'minecraft:large_smoke'} ~ ~1 ~
+`;
+  });
+
+  files['functions/init.mcfunction'] =
+`# Jalankan sekali saat dunia dimuat: /function init
+gamerule commandblockoutput false
+say DreadCraft aktif: ${state.info.name}
+`;
+
+  // scripts/main.js — pemicu jumpscare lewat command (scriptevent stabil + custom command Beta API)
+  if(state.jumpscares.length){
+    const jsonMap = JSON.stringify(
+      Object.fromEntries(state.jumpscares.map(j => [slug(j.name), {
+        sound: j.soundEvent || 'mob.wither.spawn',
+        text: j.screenText || '...',
+        shakeIntensity: Number(j.shakeIntensity) || 0.8,
+        shakeDuration: Number(j.shakeDuration) || 1,
+        particle: j.particle || 'minecraft:large_smoke'
+      }])),
+      null, 2
+    );
+    const ids = state.jumpscares.map(j=>`"${slug(j.name)}"`).join(', ');
+
+    files['scripts/main.js'] =
+`// DreadCraft — pemicu jumpscare lewat command (Script API, Beta APIs)
+// Daftar id jumpscare yang bisa dipanggil: ${state.jumpscares.map(j=>slug(j.name)).join(', ')}
+import { world, system, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus } from "@minecraft/server";
+
+const JUMPSCARES = ${jsonMap};
+
+function runJumpscare(id) {
+  const scare = JUMPSCARES[id];
+  if (!scare) return;
+  for (const player of world.getAllPlayers()) {
+    try { player.runCommand(\`playsound \${scare.sound} @s ~ ~ ~ 1 0.6\`); } catch (e) {}
+    try { player.runCommand(\`camerashake add @s \${scare.shakeIntensity} \${scare.shakeDuration} positional\`); } catch (e) {}
+    try { player.runCommand(\`title @s title §4§l\${scare.text.toUpperCase()}\`); } catch (e) {}
+    try { player.runCommand(\`particle \${scare.particle} ~ ~1 ~\`); } catch (e) {}
+  }
+}
+
+// Cara 1 (stabil, tidak butuh Beta APIs): /scriptevent dreadcraft:scare_<id>
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+  const prefix = "dreadcraft:scare_";
+  if (!ev.id.startsWith(prefix)) return;
+  const id = ev.id.slice(prefix.length);
+  system.run(() => runJumpscare(id));
+});
+
+// Cara 2 (EKSPERIMENTAL, butuh toggle "Beta APIs" aktif di dunia):
+// mendaftarkan slash command asli: /dreadcraft:scare <id>
+try {
+  system.beforeEvents.startup.subscribe(({ customCommandRegistry }) => {
+    customCommandRegistry.registerEnum("dreadcraft:jumpscareId", [${ids}]);
+    customCommandRegistry.registerCommand(
+      {
+        name: "dreadcraft:scare",
+        description: "Memicu jumpscare DreadCraft",
+        permissionLevel: CommandPermissionLevel.GameDirectors,
+        mandatoryParameters: [
+          { name: "jumpscareId", type: CustomCommandParamType.Enum, enumName: "dreadcraft:jumpscareId" }
+        ]
+      },
+      (origin, jumpscareId) => {
+        system.run(() => runJumpscare(jumpscareId));
+        return { status: CustomCommandStatus.Success };
+      }
+    );
+  });
+} catch (e) {
+  // Custom Commands API belum tersedia di versi Minecraft ini —
+  // /scriptevent dreadcraft:scare_<id> di atas tetap berfungsi.
+}
+`;
+  }
+
+  return files;
+}
+
+function jumpscareName(id){
+  const j = state.jumpscares.find(x=>x.id===id);
+  return j ? j.name : 'jumpscare';
+}
+
+// ---------- EVENTS ----------
+function bindEvents(){
+  // info
+  const iName=document.getElementById('i-name');
+  if(iName){
+    iName.addEventListener('input', e=>state.info.name=e.target.value);
+    document.getElementById('i-desc').addEventListener('input', e=>state.info.description=e.target.value);
+    document.getElementById('i-author').addEventListener('input', e=>state.info.author=e.target.value);
+    document.getElementById('i-color').addEventListener('change', e=>state.info.packColor=e.target.value);
+  }
+
+  // mobs
+  const addMob = document.getElementById('add-mob');
+  if(addMob) addMob.addEventListener('click', ()=>{ state.mobs.push(newMob()); renderAll(); });
+  document.querySelectorAll('#mobs, .card').forEach(()=>{});
+  document.querySelectorAll('.card').forEach(card=>{
+    const id = card.dataset.id;
+    const mob = state.mobs.find(m=>m.id===id);
+    const it = state.items.find(x=>x.id===id);
+    const j = state.jumpscares.find(x=>x.id===id);
+    if(mob){
+      card.querySelector('.m-name').addEventListener('input', e=>{mob.name=e.target.value;});
+      card.querySelector('.m-base').addEventListener('change', e=>{mob.baseType=e.target.value; renderAll();});
+      card.querySelector('.m-behavior').addEventListener('change', e=>{mob.behavior=e.target.value; renderAll();});
+      card.querySelector('.m-health').addEventListener('input', e=>{mob.health=e.target.value;});
+      card.querySelector('.m-damage').addEventListener('input', e=>{mob.damage=e.target.value;});
+      card.querySelector('.m-speed').addEventListener('input', e=>{mob.speed=e.target.value;});
+      card.querySelector('.m-sound').addEventListener('input', e=>{mob.sound=e.target.value;});
+      card.querySelector('.m-jumpscare').addEventListener('change', e=>{mob.jumpscareOnSpawn=e.target.value;});
+      card.querySelector('.m-remove').addEventListener('click', ()=>{ state.mobs = state.mobs.filter(x=>x.id!==id); renderAll(); });
+      card.querySelectorAll('input').forEach(inp=> inp.addEventListener('blur', renderCardLabel));
+    }
+    if(it){
+      card.querySelector('.it-name').addEventListener('input', e=>{it.name=e.target.value;});
+      card.querySelector('.it-base').addEventListener('input', e=>{it.baseItem=e.target.value;});
+      card.querySelector('.it-trigger').addEventListener('change', e=>{it.trigger=e.target.value; renderAll();});
+      card.querySelector('.it-cooldown').addEventListener('input', e=>{it.cooldownTicks=e.target.value;});
+      card.querySelector('.it-jumpscare').addEventListener('change', e=>{it.linkedJumpscare=e.target.value;});
+      card.querySelector('.it-remove').addEventListener('click', ()=>{ state.items = state.items.filter(x=>x.id!==id); renderAll(); });
+    }
+    if(j){
+      card.querySelector('.j-name').addEventListener('input', e=>{j.name=e.target.value;});
+      card.querySelector('.j-sound').addEventListener('input', e=>{j.soundEvent=e.target.value;});
+      card.querySelector('.j-text').addEventListener('input', e=>{j.screenText=e.target.value;});
+      card.querySelector('.j-shake-i').addEventListener('input', e=>{j.shakeIntensity=e.target.value;});
+      card.querySelector('.j-shake-d').addEventListener('input', e=>{j.shakeDuration=e.target.value;});
+      card.querySelector('.j-cooldown').addEventListener('input', e=>{j.cooldown=e.target.value;});
+      card.querySelector('.j-particle').addEventListener('input', e=>{j.particle=e.target.value;});
+      card.querySelector('.j-remove').addEventListener('click', ()=>{ state.jumpscares = state.jumpscares.filter(x=>x.id!==id); renderAll(); });
+      card.querySelector('.j-test').addEventListener('click', ()=> testJumpscare(j));
+    }
+  });
+
+  const addItem = document.getElementById('add-item');
+  if(addItem) addItem.addEventListener('click', ()=>{ state.items.push(newItem()); renderAll(); });
+
+  const addJ = document.getElementById('add-jumpscare');
+  if(addJ) addJ.addEventListener('click', ()=>{ state.jumpscares.push(newJumpscare()); renderAll(); });
+
+  const dl = document.getElementById('download-zip');
+  if(dl) dl.addEventListener('click', downloadZip);
+
+  if(document.getElementById('monitor')) startClock();
+}
+
+function renderCardLabel(){ /* no-op, live text not required to re-render */ }
+
+let clockStarted = false;
+function startClock(){
+  if(clockStarted) return; clockStarted = true;
+  let t=0;
+  setInterval(()=>{
+    t++;
+    const el = document.getElementById('timestamp');
+    if(!el) { clockStarted=false; return; }
+    const h=String(Math.floor(t/3600)).padStart(2,'0');
+    const m=String(Math.floor((t%3600)/60)).padStart(2,'0');
+    const s=String(t%60).padStart(2,'0');
+    el.textContent = `${h}:${m}:${s}`;
+  },1000);
+}
+
+function testJumpscare(j){
+  const monitor = document.getElementById('monitor');
+  const content = document.getElementById('monitor-content');
+  if(!monitor) return;
+  content.className='flash-txt';
+  content.textContent = (j.screenText||'...').toUpperCase();
+  monitor.classList.add('flashing');
+  playShock();
+  setTimeout(()=>{
+    monitor.classList.remove('flashing');
+    content.className='idle-txt';
+    content.textContent='— sinyal tenang —';
+  }, 900);
+}
+
+function playShock(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const dur = 0.5;
+    const bufferSize = ctx.sampleRate*dur;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * (1 - i/bufferSize); }
+    const noise = ctx.createBufferSource(); noise.buffer = buffer;
+    const filter = ctx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=1200;
+    const gain = ctx.createGain(); gain.gain.setValueAtTime(0.5, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+
+    const osc = ctx.createOscillator(); osc.type='sawtooth';
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime+dur);
+    const oscGain = ctx.createGain(); oscGain.gain.setValueAtTime(0.35, ctx.currentTime); oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+
+    noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    osc.connect(oscGain); oscGain.connect(ctx.destination);
+    noise.start(); osc.start();
+    noise.stop(ctx.currentTime+dur); osc.stop(ctx.currentTime+dur);
+  }catch(e){ /* audio not available, ignore */ }
+}
+
+async function downloadZip(){
+  const btn = document.getElementById('download-zip');
+  const original = btn.textContent;
+  btn.textContent = 'Menyusun paket...';
+  btn.disabled = true;
+  try{
+    const zip = new JSZip();
+    const files = buildFiles();
+    Object.entries(files).forEach(([path, content])=> zip.file(path, content));
+    const blob = await zip.generateAsync({type:'blob'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${slug(state.info.name)}_behavior_pack.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+}
+
+// seed with one example each so the tool feels alive on load
+state.jumpscares.push({ id:uid(), name:'Wajah di Kegelapan', soundEvent:'mob.wither.spawn', screenText:'DIA MELIHATMU', shakeIntensity:0.8, shakeDuration:1.2, particle:'minecraft:large_smoke', cooldown:5 });
+state.mobs.push({ id:uid(), name:'Pengintai Bayangan', baseType:'zombie', behavior:'hostile', health:20, damage:5, speed:1.0, sound:'mob.zombie.say', jumpscareOnSpawn: state.jumpscares[0].id });
+state.items.push({ id:uid(), name:'Lonceng Terkutuk', baseItem:'bell', trigger:'use', linkedJumpscare: state.jumpscares[0].id, cooldownTicks:100 });
+
+renderAll();
+</script>
+</body>
+</html>
