@@ -224,22 +224,29 @@ const state = {
   info: { name:'Shadow of the Deep', description:'Addon horor dengan mob jahat, item pemicu, dan jumpscare.', author:'Anonymous', packColor:'blood' },
   mobs: [],
   items: [],
-  jumpscares: []
+  jumpscares: [],
+  commands: []
 };
 const uid = () => Math.random().toString(36).slice(2,9);
 const BASE_MOBS = ['zombie','skeleton','warden','husk','drowned','creeper','enderman','phantom','vindicator','custom'];
 
 function newMob(){
   return { id:uid(), name:'Pengintai Bayangan', baseType:'zombie', behavior:'hostile',
-    health:20, damage:5, speed:1.0, sound:'mob.zombie.say', jumpscareOnSpawn:'' };
+    health:20, damage:5, speed:1.0, sound:'mob.zombie.say', jumpscareOnSpawn:'',
+    textureName:'', textureData:null, modelName:'', modelData:null, geometryId:'',
+    soundName:'', soundData:null, soundExt:'' };
 }
 function newItem(){
   return { id:uid(), name:'Lonceng Terkutuk', baseItem:'bell', trigger:'use',
-    linkedJumpscare:'', cooldownTicks:100 };
+    linkedJumpscare:'', cooldownTicks:100, iconName:'', iconData:null };
 }
 function newJumpscare(){
   return { id:uid(), name:'Wajah di Kegelapan', soundEvent:'mob.wither.spawn',
-    screenText:'DIA MELIHATMU', shakeIntensity:0.8, shakeDuration:1.2, particle:'minecraft:large_smoke', cooldown:5 };
+    screenText:'DIA MELIHATMU', shakeIntensity:0.8, shakeDuration:1.2, particle:'minecraft:large_smoke', cooldown:5,
+    soundName:'', soundData:null, soundExt:'' };
+}
+function newCommand(){
+  return { id:uid(), name:'perintah_baru', description:'Perintah kustom', lines:'say Halo dari DreadCraft!', registerSlash:true };
 }
 
 // ---------- TABS ----------
@@ -248,7 +255,8 @@ const TABS = [
   {id:'mobs', label:'Mob', num:'02'},
   {id:'items', label:'Item Pemicu', num:'03'},
   {id:'jumpscares', label:'Jumpscare', num:'04'},
-  {id:'export', label:'Ekspor', num:'05'},
+  {id:'commands', label:'Perintah Kustom', num:'05'},
+  {id:'export', label:'Ekspor', num:'06'},
 ];
 
 function renderTabs(){
@@ -269,6 +277,7 @@ function renderAll(){
   if(state.tab==='mobs') main.innerHTML = viewMobs();
   if(state.tab==='items') main.innerHTML = viewItems();
   if(state.tab==='jumpscares') main.innerHTML = viewJumpscares();
+  if(state.tab==='commands') main.innerHTML = viewCommands();
   if(state.tab==='export') main.innerHTML = viewExport();
   bindEvents();
 }
@@ -320,7 +329,7 @@ function viewMobs(){
         <div class="field"><label>Kecepatan (x)</label><input type="number" step="0.1" class="m-speed" value="${m.speed}" min="0.1"></div>
       </div>
       <div class="grid2">
-        <div class="field"><label>Suara Ambient</label><input type="text" class="m-sound" value="${esc(m.sound)}" placeholder="mob.zombie.say"></div>
+        <div class="field"><label>Suara Ambient (nama vanilla, dipakai jika tak upload file suara)</label><input type="text" class="m-sound" value="${esc(m.sound)}" placeholder="mob.zombie.say"></div>
         <div class="field"><label>Trigger Jumpscare Saat Muncul</label>
           <select class="m-jumpscare">
             <option value="">— Tidak ada —</option>
@@ -328,6 +337,22 @@ function viewMobs(){
           </select>
         </div>
       </div>
+      <div class="section-label" style="margin:18px 0 10px;">Kustomisasi Tampilan &amp; Suara (opsional)</div>
+      <div class="grid3">
+        <div class="field"><label>Tekstur (PNG)</label>
+          <input type="file" accept="image/png" class="m-texture-file">
+          <p class="hint">${m.textureName ? '✓ '+esc(m.textureName) : 'Belum ada file. Tanpa ini, model dasar mob dipakai.'}</p>
+        </div>
+        <div class="field"><label>Model 3D (.geo.json)</label>
+          <input type="file" accept="application/json,.json" class="m-model-file">
+          <p class="hint">${m.modelName ? '✓ '+esc(m.modelName) : 'Opsional, format geometry Bedrock.'}</p>
+        </div>
+        <div class="field"><label>Suara Kustom (.ogg disarankan)</label>
+          <input type="file" accept="audio/*" class="m-sound-file">
+          <p class="hint">${m.soundName ? '✓ '+esc(m.soundName) : 'Minecraft Bedrock hanya benar-benar mendukung .ogg.'}</p>
+        </div>
+      </div>
+      <div class="field"><label>ID Geometry (otomatis terisi dari file model, bisa diedit)</label><input type="text" class="m-geo-id" value="${esc(m.geometryId)}" placeholder="geometry.dreadcraft.namamobmu"></div>
       <button class="ghost danger m-remove">Hapus Mob</button>
     </div>
   `).join('');
@@ -367,6 +392,10 @@ function viewItems(){
           ${state.jumpscares.map(j=>`<option value="${j.id}" ${it.linkedJumpscare===j.id?'selected':''}>${esc(j.name)}</option>`).join('')}
         </select>
       </div>
+      <div class="field"><label>Ikon Kustom (PNG, opsional)</label>
+        <input type="file" accept="image/png" class="it-icon-file">
+        <p class="hint">${it.iconName ? '✓ '+esc(it.iconName) : 'Tanpa ini, ikon item dasar vanilla dipakai.'}</p>
+      </div>
       <button class="ghost danger it-remove">Hapus Item</button>
     </div>
   `).join('');
@@ -397,6 +426,10 @@ function viewJumpscares(){
         <div class="field"><label>Cooldown (dtk)</label><input type="number" class="j-cooldown" value="${j.cooldown}" min="0"></div>
       </div>
       <div class="field"><label>Partikel</label><input type="text" class="j-particle" value="${esc(j.particle)}" placeholder="minecraft:large_smoke"></div>
+      <div class="field"><label>Suara Kustom — .ogg disarankan (menggantikan Sound Event di atas)</label>
+        <input type="file" accept="audio/*" class="j-sound-file">
+        <p class="hint">${j.soundName ? '✓ '+esc(j.soundName) : 'Tanpa ini, Sound Event vanilla di atas dipakai. Minecraft Bedrock hanya benar-benar mendukung .ogg.'}</p>
+      </div>
       <p class="hint">Perintah in-game: <code>/scriptevent dreadcraft:scare_${slug(j.name)}</code> · eksperimental: <code>/dreadcraft:scare ${slug(j.name)}</code> (butuh Beta APIs)</p>
       <div style="display:flex; gap:10px; margin-top:8px;">
         <button class="ghost j-test">▶ Uji Coba</button>
@@ -418,6 +451,40 @@ function viewJumpscares(){
   `;
 }
 
+function viewCommands(){
+  const cards = state.commands.map(c=>`
+    <div class="card" data-id="${c.id}">
+      <div class="card-head">
+        <span class="name">${esc(c.name)||'(tanpa nama)'}</span>
+        <span class="tag">/dreadcraft:${slug(c.name)}</span>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Nama Perintah</label><input type="text" class="c-name" value="${esc(c.name)}" placeholder="mis. buka_ruang_rahasia"></div>
+        <div class="field"><label>Deskripsi</label><input type="text" class="c-desc" value="${esc(c.description)}"></div>
+      </div>
+      <div class="field"><label>Daftar Command Minecraft (satu per baris)</label>
+        <textarea class="c-lines" rows="5" placeholder="say Halo!&#10;playsound mob.wither.spawn @a&#10;summon dreadcraft:pengintai_bayangan">${esc(c.lines)}</textarea>
+        <p class="hint">Setiap baris dijalankan berurutan, sama seperti isi file .mcfunction.</p>
+      </div>
+      <div class="field">
+        <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-size:12px;">
+          <input type="checkbox" class="c-slash" ${c.registerSlash?'checked':''} style="width:auto;">
+          Daftarkan juga sebagai slash command <code>/dreadcraft:${slug(c.name)}</code> (butuh Beta APIs)
+        </label>
+      </div>
+      <p class="hint">Selalu bisa dipanggil stabil lewat: <code>/scriptevent dreadcraft:cmd_${slug(c.name)}</code> — cocok untuk command block, NPC dialogue, atau tripwire.</p>
+      <button class="ghost danger c-remove">Hapus Perintah</button>
+    </div>
+  `).join('');
+
+  return `
+    <h2 class="panel-title">⌨ Perintah Kustom</h2>
+    <p class="panel-desc">Buat perintah in-game buatanmu sendiri — kumpulan command Minecraft apa pun (summon, say, playsound, particle, teleport, dll) yang dipanggil lewat satu perintah saja, lewat command block, atau NPC dialogue.</p>
+    ${state.commands.length ? cards : `<div class="empty-state">Belum ada perintah kustom. Tambahkan yang pertama.</div>`}
+    <button class="add-btn" id="add-command">+ Tambah Perintah Kustom</button>
+  `;
+}
+
 function viewExport(){
   const files = buildFiles();
   const treeLines = Object.keys(files).sort().map(p=>{
@@ -428,13 +495,13 @@ function viewExport(){
   const preview = files['manifest.json'] || '';
   return `
     <h2 class="panel-title">📦 Ekspor Behavior Pack</h2>
-    <p class="panel-desc">File di bawah ini siap dimasukkan ke folder <em>com.mojang/development_behavior_packs/</em> di perangkatmu (via ZIP, lalu ekstrak).</p>
+    <p class="panel-desc">File di bawah ini siap dimasukkan ke folder <em>com.mojang/development_behavior_packs/</em> (dan <em>development_resource_packs/</em> jika kamu pakai tekstur/model/suara kustom) di perangkatmu — lihat README.txt untuk detail lengkap.</p>
     <div class="section-label">Struktur File</div>
     <div class="filetree">${treeLines || '<div class="empty-state">Tambahkan mob/item/jumpscare dulu.</div>'}</div>
     <div class="section-label">Pratinjau manifest.json</div>
     <pre class="code">${esc(preview)}</pre>
     <div class="section-label">Unduh</div>
-    <p class="hint" style="margin-bottom:14px;">ZIP berisi manifest, entity mob, item pemicu, fungsi jumpscare (.mcfunction), dan README cara pasang.</p>
+    <p class="hint" style="margin-bottom:14px;">ZIP berisi manifest, entity mob, item pemicu, fungsi jumpscare & perintah kustom (.mcfunction), resource pack (tekstur/model/suara jika diupload), dan README cara pasang.</p>
     <button class="primary" id="download-zip">⬇ Unduh Addon (.zip)</button>
   `;
 }
@@ -474,13 +541,17 @@ function buildFiles(){
 Dibuat oleh: ${state.info.author}
 
 CARA PASANG:
-1. Salin seluruh isi folder ini ke:
+1. Salin semua folder & file DI LUAR "resource_pack/" ke:
    com.mojang/development_behavior_packs/${packSlug}/
-2. Buat dunia baru (atau buka dunia yang sudah ada Beta API sebelumnya),
+2. Jika ada folder "resource_pack/" di dalam zip ini (artinya kamu
+   pakai tekstur/model/suara kustom), salin ISI folder tersebut ke:
+   com.mojang/development_resource_packs/${packSlug}_rp/
+3. Buat dunia baru (atau buka dunia yang sudah ada Beta API sebelumnya),
    lalu di pengaturan dunia -> Experiments, AKTIFKAN toggle "Beta APIs".
    Ini WAJIB agar file scripts/main.js dan command kustom bisa jalan.
-3. Aktifkan pack ini di Behavior Packs dunia tersebut.
-4. Untuk mob & item bekerja penuh, jalankan sekali di dunia:
+4. Aktifkan behavior pack ini DAN resource pack-nya (jika ada) di
+   pengaturan dunia tersebut.
+5. Untuk mob & item bekerja penuh, jalankan sekali di dunia:
    /function init
 
 CARA MEMICU JUMPSCARE LEWAT COMMAND:
@@ -495,29 +566,46 @@ CARA MEMICU JUMPSCARE LEWAT COMMAND:
 - Command ini juga bisa dipanggil dari command block, NPC dialogue,
   atau addon lain — cocok untuk trigger area/tripwire/redstone.
 
+CARA MENJALANKAN PERINTAH KUSTOM (tab "Perintah Kustom"):
+- Cara paling stabil: /scriptevent dreadcraft:cmd_<id_perintah>
+- Cara eksperimental (BUTUH Beta APIs, dan hanya jika kamu centang
+  "Daftarkan sebagai slash command" saat membuatnya): setiap perintah
+  kustom punya slash command sendiri, yaitu /dreadcraft:<id_perintah>
+  (bukan lewat perintah pemilih bersama — nama command-nya persis
+  nama yang kamu isi di tab "Perintah Kustom", jadi 100% custom).
+- Setiap perintah kustom juga tersimpan sebagai file .mcfunction biasa
+  di functions/custom/, jadi bisa dipanggil manual lewat:
+    /function custom/<id_perintah>
+
+CARA KUSTOMISASI TEKSTUR/MODEL/SUARA:
+- Upload file lewat tab Mob (tekstur PNG, model .geo.json, suara),
+  tab Item (ikon PNG), dan tab Jumpscare (suara kustom).
+- Semua file itu otomatis masuk ke folder "resource_pack/" dalam zip
+  ini dan akan muncul begitu resource pack-nya dipasang (lihat langkah
+  pemasangan di atas). Tanpa upload, tampilan/suara vanilla dipakai.
+- Model 3D harus format geometry Bedrock (.geo.json) yang sudah kamu
+  buat sendiri (mis. via Blockbench). ID geometry di dalamnya akan
+  otomatis dideteksi, atau bisa kamu isi manual di field "ID Geometry".
+
 CATATAN PENTING:
 - Mob dibuat sebagai entity baru (bukan menimpa mob vanilla), jadi
-  mob lain di dunia tidak berubah. Tampilan/model & animasinya
-  meminjam dari mob dasar yang dipilih (lewat runtime_identifier),
-  tapi statistik (health, damage, speed) dan perilaku (jahat/baik/
-  netral) sudah 100% custom sesuai pengaturanmu.
-- Ikon item memakai nama tekstur yang kamu isi. Tanpa resource pack
-  pendamping (item_texture.json + gambar), item akan tampil dengan
-  ikon default/placeholder — addon tetap berfungsi penuh, hanya
-  tampilannya belum custom.
-- Fitur command kustom (/dreadcraft:scare) memakai Script API versi
-  2.0.0-beta yang MASIH EKSPERIMENTAL dari Mojang — sintaksnya bisa
-  berubah di update Minecraft berikutnya. Jika suatu saat command ini
-  berhenti bekerja setelah update game, gunakan /scriptevent sebagai
-  cadangan (lebih stabil dan sudah lama tersedia).
+  mob lain di dunia tidak berubah. Tanpa tekstur/model kustom,
+  tampilannya meminjam dari mob dasar yang dipilih (lewat
+  runtime_identifier), tapi statistik (health, damage, speed) dan
+  perilaku (jahat/baik/netral) sudah 100% custom sesuai pengaturanmu.
+- Fitur command kustom memakai Script API versi 2.0.0-beta yang
+  MASIH EKSPERIMENTAL dari Mojang — sintaksnya bisa berubah di update
+  Minecraft berikutnya. Jika suatu saat berhenti bekerja setelah
+  update game, gunakan /scriptevent sebagai cadangan (lebih stabil).
 - Uji di dunia Creative dengan cheat aktif dulu sebelum dipakai di
   dunia utama. Panggil mob dengan: /summon dreadcraft:<nama_mob>
 
 Isi:
-- entities/  -> definisi tiap mob (dasar dari mob vanilla)
-- items/     -> definisi tiap item pemicu
-- functions/ -> logika jumpscare berbasis command (suara, guncangan, partikel, teks)
-- scripts/   -> pemicu jumpscare lewat command (scriptevent + custom command Beta API)
+- entities/       -> definisi tiap mob (dasar dari mob vanilla)
+- items/          -> definisi tiap item pemicu
+- functions/      -> logika jumpscare & perintah kustom berbasis command
+- scripts/        -> pemicu jumpscare/perintah lewat command (scriptevent + Beta API)
+- resource_pack/  -> (jika ada) tekstur, model, dan suara kustommu
 `;
 
   // collision box presets per base mob so the entity has a sane hitbox in-game
@@ -564,6 +652,9 @@ Isi:
         "entity_types": [{ "filters": { "test":"is_family","subject":"other","value":"player" }, "max_dist": 16 }]
       };
     }
+    if(m.soundData){
+      components["minecraft:ambient_sound_interval"] = { "value": 8, "event_name": "ambient" };
+    }
 
     files[`entities/${slug(m.name)}.json`] = JSON.stringify({
       "format_version": "1.20.0",
@@ -609,7 +700,7 @@ Isi:
         "components": {
           "minecraft:max_stack_size": 1,
           "minecraft:cooldown": { "category": slug(it.name), "duration": (Number(it.cooldownTicks)||0)/20 },
-          "minecraft:icon": { "texture": slug(it.baseItem) || "stick" },
+          "minecraft:icon": { "texture": it.iconData ? slug(it.name) : (slug(it.baseItem) || "stick") },
           "minecraft:hand_equipped": true,
           [map.component]: { [map.key]: { "event": "dreadcraft:trigger_scare", "target": "self" } }
         },
@@ -627,14 +718,26 @@ Isi:
   // jumpscare functions
   state.jumpscares.forEach(j=>{
     const fname = slug(j.name);
+    const resolvedSound = j.soundData ? `dreadcraft.jumpscare.${fname}` : (j.soundEvent||'mob.wither.spawn');
     files[`functions/jumpscares/${fname}.mcfunction`] =
 `# Jumpscare: ${j.name}
 # Cooldown yang disarankan: ${j.cooldown} detik (atur sendiri via scoreboard jika perlu)
-playsound ${j.soundEvent||'mob.wither.spawn'} @a ~ ~ ~ 1 0.6
+playsound ${resolvedSound} @a ~ ~ ~ 1 0.6
 camerashake add @a ${j.shakeIntensity||0.8} ${j.shakeDuration||1} positional
 title @a title §4§l${(j.screenText||'').toUpperCase()}
 title @a subtitle §7...
 particle ${j.particle||'minecraft:large_smoke'} ~ ~1 ~
+`;
+  });
+
+  // custom command functions
+  state.commands.forEach(c=>{
+    const cname = slug(c.name);
+    const lines = (c.lines||'').split('\n').map(l=>l.trim()).filter(Boolean);
+    files[`functions/custom/${cname}.mcfunction`] =
+`# Perintah Kustom: ${c.name}
+# ${c.description||''}
+${lines.join('\n')}
 `;
   });
 
@@ -644,11 +747,11 @@ gamerule commandblockoutput false
 say DreadCraft aktif: ${state.info.name}
 `;
 
-  // scripts/main.js — pemicu jumpscare lewat command (scriptevent stabil + custom command Beta API)
-  if(state.jumpscares.length){
+  // scripts/main.js — pemicu jumpscare & perintah kustom lewat command (scriptevent stabil + custom command Beta API)
+  if(state.jumpscares.length || state.commands.length){
     const jsonMap = JSON.stringify(
       Object.fromEntries(state.jumpscares.map(j => [slug(j.name), {
-        sound: j.soundEvent || 'mob.wither.spawn',
+        sound: j.soundData ? `dreadcraft.jumpscare.${slug(j.name)}` : (j.soundEvent || 'mob.wither.spawn'),
         text: j.screenText || '...',
         shakeIntensity: Number(j.shakeIntensity) || 0.8,
         shakeDuration: Number(j.shakeDuration) || 1,
@@ -657,13 +760,22 @@ say DreadCraft aktif: ${state.info.name}
       null, 2
     );
     const ids = state.jumpscares.map(j=>`"${slug(j.name)}"`).join(', ');
+    const cmdLinesMap = JSON.stringify(
+      Object.fromEntries(state.commands.map(c => [slug(c.name),
+        (c.lines||'').split('\n').map(l=>l.trim()).filter(Boolean)
+      ])),
+      null, 2
+    );
+    const slashCommands = state.commands.filter(c=>c.registerSlash);
 
     files['scripts/main.js'] =
-`// DreadCraft — pemicu jumpscare lewat command (Script API, Beta APIs)
-// Daftar id jumpscare yang bisa dipanggil: ${state.jumpscares.map(j=>slug(j.name)).join(', ')}
+`// DreadCraft — pemicu jumpscare & perintah kustom lewat command (Script API, Beta APIs)
+// Jumpscare: ${state.jumpscares.map(j=>slug(j.name)).join(', ') || '(tidak ada)'}
+// Perintah kustom: ${state.commands.map(c=>slug(c.name)).join(', ') || '(tidak ada)'}
 import { world, system, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus } from "@minecraft/server";
 
 const JUMPSCARES = ${jsonMap};
+const CUSTOM_COMMANDS = ${cmdLinesMap};
 
 function runJumpscare(id) {
   const scare = JUMPSCARES[id];
@@ -676,19 +788,34 @@ function runJumpscare(id) {
   }
 }
 
-// Cara 1 (stabil, tidak butuh Beta APIs): /scriptevent dreadcraft:scare_<id>
+function runCustomCommand(id) {
+  const lines = CUSTOM_COMMANDS[id];
+  if (!lines) return;
+  system.run(() => {
+    try { world.getDimension("overworld").runCommand(\`function custom/\${id}\`); } catch (e) {}
+  });
+}
+
+// Cara 1 (stabil, tidak butuh Beta APIs):
+//   /scriptevent dreadcraft:scare_<id_jumpscare>
+//   /scriptevent dreadcraft:cmd_<id_perintah>
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
-  const prefix = "dreadcraft:scare_";
-  if (!ev.id.startsWith(prefix)) return;
-  const id = ev.id.slice(prefix.length);
-  system.run(() => runJumpscare(id));
+  const scarePrefix = "dreadcraft:scare_";
+  const cmdPrefix = "dreadcraft:cmd_";
+  if (ev.id.startsWith(scarePrefix)) {
+    const id = ev.id.slice(scarePrefix.length);
+    system.run(() => runJumpscare(id));
+  } else if (ev.id.startsWith(cmdPrefix)) {
+    const id = ev.id.slice(cmdPrefix.length);
+    system.run(() => runCustomCommand(id));
+  }
 });
 
 // Cara 2 (EKSPERIMENTAL, butuh toggle "Beta APIs" aktif di dunia):
-// mendaftarkan slash command asli: /dreadcraft:scare <id>
+// mendaftarkan slash command asli: /dreadcraft:scare <id> dan /dreadcraft:<perintah>
 try {
   system.beforeEvents.startup.subscribe(({ customCommandRegistry }) => {
-    customCommandRegistry.registerEnum("dreadcraft:jumpscareId", [${ids}]);
+    ${ids ? `customCommandRegistry.registerEnum("dreadcraft:jumpscareId", [${ids}]);
     customCommandRegistry.registerCommand(
       {
         name: "dreadcraft:scare",
@@ -702,16 +829,128 @@ try {
         system.run(() => runJumpscare(jumpscareId));
         return { status: CustomCommandStatus.Success };
       }
-    );
+    );` : '// tidak ada jumpscare terdaftar'}
+    ${slashCommands.length ? slashCommands.map(c=>{
+      const cslug = slug(c.name);
+      return `customCommandRegistry.registerCommand(
+      {
+        name: "dreadcraft:${cslug}",
+        description: ${JSON.stringify(c.description || c.name)},
+        permissionLevel: CommandPermissionLevel.GameDirectors
+      },
+      (origin) => {
+        system.run(() => runCustomCommand("${cslug}"));
+        return { status: CustomCommandStatus.Success };
+      }
+    );`;
+    }).join('\n    ') : '// tidak ada perintah kustom yang didaftarkan sebagai slash command'}
   });
 } catch (e) {
   // Custom Commands API belum tersedia di versi Minecraft ini —
-  // /scriptevent dreadcraft:scare_<id> di atas tetap berfungsi.
+  // /scriptevent di atas tetap berfungsi sebagai cadangan stabil.
 }
 `;
   }
 
+  // ---------- RESOURCE PACK (tekstur, model, suara kustom) ----------
+  const hasCustomAssets = state.mobs.some(m=>m.textureData||m.modelData||m.soundData) ||
+                          state.items.some(it=>it.iconData) ||
+                          state.jumpscares.some(j=>j.soundData);
+
+  if(hasCustomAssets){
+    const uuidRpHeader = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
+    const uuidRpModule = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
+
+    files['resource_pack/manifest.json'] = JSON.stringify({
+      format_version: 2,
+      header: {
+        name: `${state.info.name} (Resource Pack)`,
+        description: `Tekstur, model, dan suara kustom untuk ${state.info.name}`,
+        uuid: uuidRpHeader,
+        version: [1,0,0],
+        min_engine_version: [1,21,80]
+      },
+      modules: [
+        { type: "resources", uuid: uuidRpModule, version: [1,0,0] }
+      ]
+    }, null, 2);
+
+    const GEOMETRY_MAP = {
+      zombie:'geometry.zombie', husk:'geometry.zombie', drowned:'geometry.drowned',
+      skeleton:'geometry.skeleton', warden:'geometry.warden', creeper:'geometry.creeper',
+      enderman:'geometry.enderman', phantom:'geometry.phantom', vindicator:'geometry.vindicator',
+      custom:'geometry.zombie'
+    };
+    const soundDefs = {};
+
+    state.mobs.forEach(m=>{
+      if(!(m.textureData||m.modelData||m.soundData)) return;
+      const mslug = slug(m.name);
+      const geometryId = m.modelData ? (m.geometryId || `geometry.dreadcraft.${mslug}`) : (GEOMETRY_MAP[m.baseType]||GEOMETRY_MAP.custom);
+      const desc = {
+        identifier: `dreadcraft:${mslug}`,
+        materials: { default: "entity_alphatest" },
+        textures: { default: m.textureData ? `textures/entity/${mslug}` : `textures/entity/${m.baseType==='custom'?'zombie':m.baseType}` },
+        geometry: { default: geometryId },
+        render_controllers: [ "controller.render.default" ]
+      };
+      if(m.soundData){
+        soundDefs[`dreadcraft.mob.${mslug}`] = { category:'hostile', sounds:[`sounds/dreadcraft/mob_${mslug}`] };
+        desc.sound_effects = { ambient: `dreadcraft.mob.${mslug}` };
+      }
+      files[`resource_pack/entity/${mslug}.entity.json`] = JSON.stringify({
+        format_version: "1.10.0",
+        "minecraft:client_entity": { description: desc }
+      }, null, 2);
+    });
+
+    const itemsWithIcons = state.items.filter(it=>it.iconData);
+    if(itemsWithIcons.length){
+      const texData = {};
+      itemsWithIcons.forEach(it=>{ texData[slug(it.name)] = { textures: `textures/items/${slug(it.name)}` }; });
+      files['resource_pack/textures/item_texture.json'] = JSON.stringify({
+        resource_pack_name: packSlug,
+        texture_name: "atlas.items",
+        texture_data: texData
+      }, null, 2);
+    }
+
+    state.jumpscares.forEach(j=>{
+      if(!j.soundData) return;
+      soundDefs[`dreadcraft.jumpscare.${slug(j.name)}`] = { category:'record', sounds:[`sounds/dreadcraft/jumpscare_${slug(j.name)}`] };
+    });
+
+    if(Object.keys(soundDefs).length){
+      files['resource_pack/sounds/sound_definitions.json'] = JSON.stringify({
+        format_version: "1.14.0",
+        sound_definitions: soundDefs
+      }, null, 2);
+    }
+  }
+
   return files;
+}
+
+// ---------- FILE READING HELPERS ----------
+function readAsArrayBuffer(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = ()=>resolve(r.result);
+    r.onerror = ()=>reject(r.error);
+    r.readAsArrayBuffer(file);
+  });
+}
+function readAsText(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = ()=>resolve(r.result);
+    r.onerror = ()=>reject(r.error);
+    r.readAsText(file);
+  });
+}
+function fileExt(name){
+  const m = /\.([a-z0-9]+)$/i.exec(name||'');
+  return m ? m[1].toLowerCase() : 'ogg';
 }
 
 function jumpscareName(id){
@@ -748,8 +987,36 @@ function bindEvents(){
       card.querySelector('.m-speed').addEventListener('input', e=>{mob.speed=e.target.value;});
       card.querySelector('.m-sound').addEventListener('input', e=>{mob.sound=e.target.value;});
       card.querySelector('.m-jumpscare').addEventListener('change', e=>{mob.jumpscareOnSpawn=e.target.value;});
+      card.querySelector('.m-geo-id').addEventListener('input', e=>{mob.geometryId=e.target.value;});
+      card.querySelector('.m-texture-file').addEventListener('change', async e=>{
+        const f = e.target.files[0]; if(!f) return;
+        mob.textureData = await readAsArrayBuffer(f);
+        mob.textureName = f.name;
+        renderAll();
+      });
+      card.querySelector('.m-model-file').addEventListener('change', async e=>{
+        const f = e.target.files[0]; if(!f) return;
+        const text = await readAsText(f);
+        mob.modelData = text;
+        mob.modelName = f.name;
+        if(!mob.geometryId){
+          try{
+            const parsed = JSON.parse(text);
+            const geo = (parsed['minecraft:geometry']||[])[0];
+            if(geo && geo.description && geo.description.identifier) mob.geometryId = geo.description.identifier;
+          }catch(err){ /* biarkan kosong, user isi manual */ }
+        }
+        renderAll();
+      });
+      card.querySelector('.m-sound-file').addEventListener('change', async e=>{
+        const f = e.target.files[0]; if(!f) return;
+        mob.soundData = await readAsArrayBuffer(f);
+        mob.soundName = f.name;
+        mob.soundExt = fileExt(f.name);
+        renderAll();
+      });
       card.querySelector('.m-remove').addEventListener('click', ()=>{ state.mobs = state.mobs.filter(x=>x.id!==id); renderAll(); });
-      card.querySelectorAll('input').forEach(inp=> inp.addEventListener('blur', renderCardLabel));
+      card.querySelectorAll('input[type=text],input[type=number]').forEach(inp=> inp.addEventListener('blur', renderCardLabel));
     }
     if(it){
       card.querySelector('.it-name').addEventListener('input', e=>{it.name=e.target.value;});
@@ -757,6 +1024,12 @@ function bindEvents(){
       card.querySelector('.it-trigger').addEventListener('change', e=>{it.trigger=e.target.value; renderAll();});
       card.querySelector('.it-cooldown').addEventListener('input', e=>{it.cooldownTicks=e.target.value;});
       card.querySelector('.it-jumpscare').addEventListener('change', e=>{it.linkedJumpscare=e.target.value;});
+      card.querySelector('.it-icon-file').addEventListener('change', async e=>{
+        const f = e.target.files[0]; if(!f) return;
+        it.iconData = await readAsArrayBuffer(f);
+        it.iconName = f.name;
+        renderAll();
+      });
       card.querySelector('.it-remove').addEventListener('click', ()=>{ state.items = state.items.filter(x=>x.id!==id); renderAll(); });
     }
     if(j){
@@ -767,8 +1040,23 @@ function bindEvents(){
       card.querySelector('.j-shake-d').addEventListener('input', e=>{j.shakeDuration=e.target.value;});
       card.querySelector('.j-cooldown').addEventListener('input', e=>{j.cooldown=e.target.value;});
       card.querySelector('.j-particle').addEventListener('input', e=>{j.particle=e.target.value;});
+      card.querySelector('.j-sound-file').addEventListener('change', async e=>{
+        const f = e.target.files[0]; if(!f) return;
+        j.soundData = await readAsArrayBuffer(f);
+        j.soundName = f.name;
+        j.soundExt = fileExt(f.name);
+        renderAll();
+      });
       card.querySelector('.j-remove').addEventListener('click', ()=>{ state.jumpscares = state.jumpscares.filter(x=>x.id!==id); renderAll(); });
       card.querySelector('.j-test').addEventListener('click', ()=> testJumpscare(j));
+    }
+    const cmd = state.commands.find(x=>x.id===id);
+    if(cmd){
+      card.querySelector('.c-name').addEventListener('input', e=>{cmd.name=e.target.value;});
+      card.querySelector('.c-desc').addEventListener('input', e=>{cmd.description=e.target.value;});
+      card.querySelector('.c-lines').addEventListener('input', e=>{cmd.lines=e.target.value;});
+      card.querySelector('.c-slash').addEventListener('change', e=>{cmd.registerSlash=e.target.checked;});
+      card.querySelector('.c-remove').addEventListener('click', ()=>{ state.commands = state.commands.filter(x=>x.id!==id); renderAll(); });
     }
   });
 
@@ -777,6 +1065,9 @@ function bindEvents(){
 
   const addJ = document.getElementById('add-jumpscare');
   if(addJ) addJ.addEventListener('click', ()=>{ state.jumpscares.push(newJumpscare()); renderAll(); });
+
+  const addCmd = document.getElementById('add-command');
+  if(addCmd) addCmd.addEventListener('click', ()=>{ state.commands.push(newCommand()); renderAll(); });
 
   const dl = document.getElementById('download-zip');
   if(dl) dl.addEventListener('click', downloadZip);
@@ -849,6 +1140,22 @@ async function downloadZip(){
     const zip = new JSZip();
     const files = buildFiles();
     Object.entries(files).forEach(([path, content])=> zip.file(path, content));
+
+    // binary custom assets (textures, models, sounds) — added directly since
+    // buildFiles() only returns text content used for the on-screen preview
+    state.mobs.forEach(m=>{
+      const mslug = slug(m.name);
+      if(m.textureData) zip.file(`resource_pack/textures/entity/${mslug}.png`, m.textureData);
+      if(m.modelData) zip.file(`resource_pack/models/entity/${mslug}.geo.json`, m.modelData);
+      if(m.soundData) zip.file(`resource_pack/sounds/dreadcraft/mob_${mslug}.${m.soundExt||'ogg'}`, m.soundData);
+    });
+    state.items.forEach(it=>{
+      if(it.iconData) zip.file(`resource_pack/textures/items/${slug(it.name)}.png`, it.iconData);
+    });
+    state.jumpscares.forEach(j=>{
+      if(j.soundData) zip.file(`resource_pack/sounds/dreadcraft/jumpscare_${slug(j.name)}.${j.soundExt||'ogg'}`, j.soundData);
+    });
+
     const blob = await zip.generateAsync({type:'blob'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
