@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pusat Siaran</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <div class="brand-mark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L4 8v13h16V8l-8-6z" stroke="#1A1200" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9 21v-6h6v6" stroke="#1A1200" stroke-width="2"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Pusat Siaran</h1>
+      <span>notifikasi-realtime · demo</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="admin">Admin</button>
+    <button class="tab" data-tab="member">Anggota</button>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div class="panel active" id="panel-admin">
+    <div class="card">
+      <p class="eyebrow">Buat Siaran</p>
+      <h2>Kirim notifikasi baru</h2>
+
+      <label for="f-title">Judul</label>
+      <input type="text" id="f-title" placeholder="Contoh: Jadwal libur diperbarui" maxlength="80">
+
+      <label for="f-msg">Pesan</label>
+      <textarea id="f-msg" placeholder="Tulis isi pesan di sini..." maxlength="300"></textarea>
+
+      <label>Jenis</label>
+      <div class="type-row" id="type-row">
+        <div class="type-chip sel" data-type="info">Info</div>
+        <div class="type-chip" data-type="sukses">Sukses</div>
+        <div class="type-chip" data-type="peringatan">Peringatan</div>
+        <div class="type-chip" data-type="darurat">Darurat</div>
+      </div>
+
+      <button class="send-btn" id="send-btn">Kirim Notifikasi</button>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Log</p>
+      <h2>Riwayat siaran</h2>
+      <div id="admin-log">
+        <div class="empty">Memuat riwayat...</div>
+      </div>
+      <button class="clear-link" id="clear-btn">Hapus semua riwayat</button>
+    </div>
+  </div>
+
+  <!-- MEMBER PANEL -->
+  <div class="panel" id="panel-member">
+    <div class="card">
+      <div class="radar-wrap">
+        <div class="radar" id="radar">
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="radar-core">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2z" fill="#8791A8"/>
+              <path d="M18 16v-5a6 6 0 10-12 0v5l-2 2v1h16v-1l-2-2z" fill="#8791A8"/>
+            </svg>
+          </div>
+        </div>
+        <div class="status-text" id="status-text">Notifikasi nonaktif</div>
+        <div class="status-sub" id="status-sub">Aktifkan untuk menerima siaran dari admin</div>
+        <button class="toggle-btn" id="toggle-btn">Aktifkan Notifikasi</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Kotak masuk</p>
+      <h2>Pesan diterima</h2>
+      <div id="member-feed">
+        <div class="empty">Belum ada pesan masuk.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">
+  <strong id="toast-title"></strong>
+  <p id="toast-msg"></p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
