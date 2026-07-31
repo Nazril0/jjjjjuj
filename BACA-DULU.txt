@@ -1,0 +1,50 @@
+PUSAT SIARAN - Aplikasi Notifikasi Admin-Member
+=================================================
+
+ISI FOLDER
+----------
+- index.html   -> struktur halaman
+- style.css    -> semua tampilan/desain
+- script.js    -> semua logika (kirim notifikasi, polling, toast, dll)
+
+CARA MENJALANKAN
+-----------------
+1. Buka file index.html langsung di browser (double click), ATAU
+2. Upload ketiga file (index.html, style.css, script.js) ke hosting statis
+   seperti Netlify, Vercel, GitHub Pages, atau cPanel, lalu buka domainnya.
+
+CARA PAKAI
+----------
+1. Tab "Admin": isi judul + pesan, pilih jenis notifikasi, klik "Kirim Notifikasi".
+2. Tab "Anggota": klik "Aktifkan Notifikasi" (izinkan notifikasi browser saat diminta).
+   Setiap 4 detik halaman ini mengecek siaran baru dan menampilkannya sebagai
+   toast + notifikasi browser.
+
+BATASAN PENTING (WAJIB DIBACA)
+-------------------------------
+Kode ini awalnya dibuat memakai fitur "window.storage" yang HANYA tersedia
+di dalam Claude Artifacts (preview di claude.ai). Karena filenya sekarang
+dipisah untuk dijalankan sebagai file HTML biasa, script.js otomatis
+memakai "localStorage" sebagai cadangan.
+
+Konsekuensinya:
+- localStorage cuma tersimpan di SATU browser/perangkat itu saja.
+- Artinya, kalau file ini dibuka langsung (double click) atau di-hosting
+  biasa TANPA server tambahan, notifikasi dari admin TIDAK akan otomatis
+  muncul di HP lain -- karena tidak ada data yang dibagikan antar perangkat.
+- Aplikasi tetap berfungsi penuh untuk demo di SATU perangkat/browser
+  (misalnya buka 2 tab: satu jadi Admin, satu jadi Anggota, dan uji coba
+  polling + notifikasi di situ).
+
+SUPAYA BENAR-BENAR LINTAS HP (opsional, butuh langkah tambahan)
+-----------------------------------------------------------------
+Untuk notifikasi yang benar-benar tersinkron ke semua HP secara real,
+folder ini perlu dihubungkan ke backend/database bersama, misalnya:
+- Firebase Realtime Database / Firestore (paling gampang, gratis untuk skala kecil)
+- Supabase (Postgres + realtime)
+- Server sendiri (Node.js + WebSocket, atau REST API + polling)
+
+Kalau mau, bagian storageGet()/storageSet() di script.js tinggal diganti
+untuk memanggil layanan tersebut -- strukturnya sudah dipisahkan supaya
+mudah diganti tanpa mengubah bagian tampilan (style.css) atau struktur
+halaman (index.html).
