@@ -313,7 +313,7 @@
   </div>
 
   <div id="scare" aria-hidden="true">
-    <img src="image.png" alt=""> 
+    <img id="scareImg" src="image1.png" alt="">
   </div>
   <div id="flash"></div>
   <audio id="scareSound" src="sound.mp3" preload="auto"></audio>
@@ -354,6 +354,41 @@
     });
   });
 
+  const scareImg = document.getElementById('scareImg');
+  const scareImages = ['image1.png','image2.png','image3.png','image4.png','image5.png','image6.png','image7.png'];
+  const SCARE_DURATION_MS = 5000;   // lama layar jumpscare tampil
+  const IMAGE_SWITCH_MS   = 90;     // ganti gambar tiap 90ms (cepat, kayak flash)
+  const SOUND_LOOPS       = 3;      // suara diputar ulang 3x
+
+  let imageTimer = null;
+  let soundPlayCount = 0;
+
+  function startImageCycle(){
+    let idx = 0;
+    scareImg.src = scareImages[0];
+    imageTimer = setInterval(() => {
+      idx = (idx + 1) % scareImages.length;
+      scareImg.src = scareImages[idx];
+    }, IMAGE_SWITCH_MS);
+  }
+  function stopImageCycle(){
+    clearInterval(imageTimer);
+  }
+
+  function playSoundLooped(){
+    soundPlayCount = 0;
+    scareSound.currentTime = 0;
+    scareSound.play().catch(()=>{});
+    soundPlayCount = 1;
+  }
+  scareSound.addEventListener('ended', () => {
+    if (soundPlayCount < SOUND_LOOPS){
+      scareSound.currentTime = 0;
+      scareSound.play().catch(()=>{});
+      soundPlayCount++;
+    }
+  });
+
   document.getElementById('seeResult').addEventListener('click', () => {
     quizWrap.style.display = 'none';
     scare.classList.add('active');
@@ -367,13 +402,15 @@
 
     if (navigator.vibrate) navigator.vibrate([80,40,80,40,200]);
 
-    scareSound.currentTime = 0;
-    scareSound.play().catch(()=>{});
+    startImageCycle();
+    playSoundLooped();
 
     setTimeout(() => {
+      stopImageCycle();
+      scareSound.pause();
       scare.classList.remove('active');
       reveal.classList.add('active');
-    }, 5000);
+    }, SCARE_DURATION_MS);
   });
 
   document.getElementById('again').addEventListener('click', () => {
