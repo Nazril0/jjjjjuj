@@ -122,11 +122,14 @@
     z-index:60; opacity:0; pointer-events:none;
   }
   #scare img{
-    max-width:95vw;
-    max-height:85vh;
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    object-fit:cover;
     filter: drop-shadow(0 0 50px #ff1414);
     animation: pop .15s ease-out;
-  }
+}
   @keyframes pop{
     0%{ transform: scale(0.3); opacity:0; }
     60%{ transform: scale(1.2); opacity:1; }
