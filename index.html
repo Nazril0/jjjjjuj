@@ -3,1180 +3,386 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DREADCRAFT // Horror Addon Forge</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<title>Tes IQ Cepat — 10 Soal</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Creepster&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#eef1f5;
+    --card:#ffffff;
+    --ink:#151b26;
+    --muted:#66707e;
+    --accent:#1f3ea8;
+    --accent2:#e5eaff;
+    --border:#dfe3ea;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --blood:#8f0d0d;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ height:100%; overflow:hidden; }
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
 
-:root{
-  --void:#0a0908;
-  --panel:#131110;
-  --panel-2:#1a1615;
-  --blood:#8a1414;
-  --blood-bright:#c81e1e;
-  --rot:#5c6e3a;
-  --rot-bright:#8aa855;
-  --bone:#d4c9b6;
-  --bone-dim:#8a8074;
-  --warden:#3a2350;
-  --warden-bright:#6b3fa0;
-  --line: rgba(212,201,182,0.09);
-}
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
-body{
-  background:var(--void);
-  color:var(--bone);
-  font-family:'IBM Plex Mono',monospace;
-  min-height:100vh;
-  overflow-x:hidden;
-  position:relative;
-}
-/* film grain */
-body::before{
-  content:"";
-  position:fixed; inset:0;
-  pointer-events:none;
-  z-index:9990;
-  opacity:0.05;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  mix-blend-mode:overlay;
-}
-.vignette{
-  position:fixed; inset:0; pointer-events:none; z-index:9989;
-  background:radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
-}
+  #quizWrap{
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .card{
+    width:100%;
+    max-width:480px;
+    max-height:92vh;
+    overflow-y:auto;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    box-shadow:0 1px 3px rgba(20,25,40,.06), 0 10px 30px rgba(20,25,40,.05);
+    padding:32px 28px;
+  }
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:16px;
+    font-family: var(--mono);
+  }
+  .badge{
+    background:var(--accent2);
+    color:var(--accent);
+    padding:3px 8px;
+    border-radius:6px;
+    font-weight:600;
+    letter-spacing:.03em;
+  }
+  .progress{
+    height:5px; width:100%;
+    background:var(--accent2);
+    border-radius:99px;
+    overflow:hidden;
+    margin-bottom:26px;
+  }
+  .progress-bar{
+    height:100%; width:9%;
+    background:var(--accent);
+    border-radius:99px;
+    transition:width .35s ease;
+  }
+  .qnum{
+    font-size:11px; font-weight:700; color:var(--accent);
+    letter-spacing:.08em; text-transform:uppercase;
+    margin-bottom:10px; font-family: var(--mono);
+  }
+  h1{ font-size:19px; font-weight:600; line-height:1.45; margin-bottom:8px; }
+  .seq{
+    font-family: var(--mono); font-size:24px; font-weight:700;
+    letter-spacing:.05em; color:var(--ink);
+    background:var(--bg); border:1px solid var(--border); border-radius:10px;
+    padding:16px; text-align:center; margin:16px 0 22px;
+  }
+  .options{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
+  .opt{
+    text-align:center; padding:14px 10px; border:1px solid var(--border);
+    border-radius:10px; background:#fff; font-size:15px; font-family: var(--mono);
+    font-weight:700; color:var(--ink); cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .opt:hover{ border-color:var(--accent); background:var(--accent2); }
+  .opt.wide{ grid-column:1 / -1; font-family:inherit; font-weight:500; font-size:14px; text-align:left; }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
 
-header.hero{
-  padding:64px 40px 40px;
-  border-bottom:1px solid var(--line);
-  position:relative;
-}
-.eyebrow{
-  font-size:11px; letter-spacing:0.35em; text-transform:uppercase;
-  color:var(--blood-bright); margin:0 0 14px;
-  display:flex; align-items:center; gap:10px;
-}
-.eyebrow::before{content:"●"; color:var(--blood-bright); animation:pulse 1.6s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.25;}}
-h1.title{
-  font-family:'Creepster',cursive;
-  font-weight:400;
-  font-size:clamp(38px,7vw,84px);
-  letter-spacing:2px;
-  margin:0;
-  color:var(--bone);
-  text-shadow:0 0 18px rgba(200,30,30,0.45), 3px 3px 0 var(--blood);
-  line-height:0.95;
-}
-.title .glitch-slice{color:var(--rot-bright); text-shadow:0 0 18px rgba(90,110,50,0.5);}
-p.sub{
-  max-width:620px; color:var(--bone-dim); font-size:14px; line-height:1.7;
-  margin:18px 0 0; font-weight:400;
-}
+  .resultBox{ text-align:center; padding:10px 0 4px; }
+  .resultBox .emoji{ font-size:36px; margin-bottom:14px; }
+  .resultBox p{ color:var(--muted); font-size:14px; line-height:1.6; margin-bottom:22px; }
+  button#seeResult{
+    width:100%; padding:14px; border:none; border-radius:10px;
+    background:var(--accent); color:#fff; font-size:15px; font-weight:600; cursor:pointer;
+  }
+  button#seeResult:hover{ background:#162e82; }
 
-.layout{
-  display:grid;
-  grid-template-columns:220px 1fr;
-  min-height:calc(100vh - 220px);
-}
-nav.tabs{
-  border-right:1px solid var(--line);
-  padding:28px 0;
-  position:sticky; top:0; align-self:start;
-}
-nav.tabs button{
-  display:flex; align-items:center; gap:10px;
-  width:100%; text-align:left;
-  background:none; border:none; color:var(--bone-dim);
-  font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:0.03em;
-  padding:14px 28px; cursor:pointer;
-  border-left:2px solid transparent;
-  transition:all 0.15s;
-}
-nav.tabs button .num{color:var(--bone-dim); font-size:11px; opacity:0.5;}
-nav.tabs button:hover{color:var(--bone); background:rgba(255,255,255,0.02);}
-nav.tabs button.active{
-  color:var(--bone); border-left-color:var(--blood-bright);
-  background:linear-gradient(90deg, rgba(138,20,20,0.12), transparent);
-}
-nav.tabs button.active .num{color:var(--blood-bright); opacity:1;}
+  .loadingDots{ display:inline-flex; gap:4px; margin-top:6px; }
+  .loadingDots span{ width:6px;height:6px;border-radius:50%; background:var(--accent); animation: blink 1.2s infinite ease-in-out; }
+  .loadingDots span:nth-child(2){ animation-delay:.2s; }
+  .loadingDots span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,80%,100%{opacity:.2;} 40%{opacity:1;} }
 
-main{padding:40px 44px 100px; max-width:920px;}
-.panel-title{
-  font-size:20px; margin:0 0 6px; color:var(--bone); letter-spacing:0.02em;
-  display:flex; align-items:center; gap:12px;
-}
-.panel-desc{color:var(--bone-dim); font-size:13px; margin:0 0 30px; line-height:1.6;}
+  #scare{
+    position:fixed; inset:0; background:#000;
+    display:none; align-items:center; justify-content:center;
+    overflow:hidden; z-index:50;
+  }
+  #scare.active{ display:flex; }
+  #flash{
+    position:fixed; inset:0; background:#fff;
+    z-index:60; opacity:0; pointer-events:none;
+  }
+  #scare img{
+    max-width:95vw;
+    max-height:85vh;
+    filter: drop-shadow(0 0 50px #ff1414);
+    animation: pop .15s ease-out;
+  }
+  @keyframes pop{
+    0%{ transform: scale(0.3); opacity:0; }
+    60%{ transform: scale(1.2); opacity:1; }
+    100%{ transform: scale(1); }
+  }
+  #scareText{
+    position:absolute; bottom:6%; width:100%; text-align:center;
+    color:#ff1414; font-family:'Impact','Arial Black',sans-serif;
+    font-size:clamp(22px,5vw,40px); letter-spacing:.1em;
+    text-shadow: 0 0 20px #000, 0 0 40px #ff1414;
+    animation: flicker .1s infinite;
+  }
+  @keyframes flicker{ 0%,100%{ opacity:1; } 50%{ opacity:.7; } }
 
-label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--bone-dim); margin-bottom:6px;}
-input[type=text], input[type=number], select, textarea{
-  width:100%; background:var(--panel); border:1px solid var(--line); color:var(--bone);
-  font-family:'IBM Plex Mono',monospace; font-size:13px; padding:10px 12px; border-radius:2px;
-  outline:none; transition:border-color 0.15s;
-}
-input:focus, select:focus, textarea:focus{border-color:var(--blood-bright);}
-textarea{resize:vertical; min-height:60px;}
-.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
-.field{margin-bottom:16px;}
-.hint{font-size:11px; color:var(--bone-dim); margin-top:5px; opacity:0.75;}
+  #reveal{
+    position:fixed; inset:0; background:var(--bg);
+    display:none; align-items:center; justify-content:center;
+    padding:24px; z-index:70;
+  }
+  #reveal.active{ display:flex; }
+  #reveal .card{ text-align:center; max-width:440px; max-height:none; overflow:visible; }
+  #reveal h2{ font-size:24px; margin-bottom:10px; }
+  #reveal h2 span{ color:var(--blood); }
+  #reveal p{ color:var(--muted); font-size:14px; line-height:1.6; margin-bottom:24px; }
+  button#again{
+    width:100%; padding:14px; border:1px solid var(--border); border-radius:10px;
+    background:#fff; color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
+  }
+  button#again:hover{ background:var(--accent2); }
 
-.card{
-  background:var(--panel); border:1px solid var(--line); border-radius:3px;
-  padding:22px; margin-bottom:18px; position:relative;
-  border-left:3px solid var(--blood);
-}
-.card.card-rot{border-left-color:var(--rot);}
-.card.card-warden{border-left-color:var(--warden-bright);}
-.card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
-.card-head .name{font-size:14px; color:var(--bone); font-weight:600;}
-.card-head .tag{font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--bone-dim); border:1px solid var(--line); padding:3px 8px; border-radius:20px;}
-
-button.ghost{
-  background:none; border:1px solid var(--line); color:var(--bone-dim);
-  font-family:'IBM Plex Mono',monospace; font-size:12px; padding:8px 14px; border-radius:2px; cursor:pointer;
-  transition:all 0.15s;
-}
-button.ghost:hover{border-color:var(--blood-bright); color:var(--bone); background:rgba(138,20,20,0.1);}
-button.danger:hover{border-color:var(--blood-bright); color:var(--blood-bright);}
-button.add-btn{
-  background:var(--panel-2); border:1px dashed var(--line); color:var(--bone-dim);
-  width:100%; padding:14px; font-family:'IBM Plex Mono',monospace; font-size:13px;
-  cursor:pointer; border-radius:3px; letter-spacing:0.04em; transition:all 0.15s;
-}
-button.add-btn:hover{border-color:var(--rot-bright); color:var(--rot-bright);}
-button.primary{
-  background:var(--blood); border:1px solid var(--blood-bright); color:var(--bone);
-  font-family:'IBM Plex Mono',monospace; font-size:13px; padding:12px 22px; letter-spacing:0.05em;
-  cursor:pointer; border-radius:2px; text-transform:uppercase; transition:all 0.15s;
-}
-button.primary:hover{background:var(--blood-bright); box-shadow:0 0 22px rgba(200,30,30,0.4);}
-
-/* jumpscare test monitor - signature element */
-.monitor{
-  border:1px solid var(--line); background:#000; border-radius:4px; overflow:hidden;
-  position:relative; margin-bottom:24px; aspect-ratio:16/7;
-  display:flex; align-items:center; justify-content:center;
-}
-.monitor::after{
-  content:""; position:absolute; inset:0; pointer-events:none;
-  background:repeating-linear-gradient(0deg, rgba(0,0,0,0.25) 0px, rgba(0,0,0,0.25) 1px, transparent 1px, transparent 3px);
-  opacity:0.5;
-}
-.monitor .rec{
-  position:absolute; top:12px; left:14px; font-size:11px; color:#a33; letter-spacing:0.1em;
-  display:flex; align-items:center; gap:6px; z-index:2;
-}
-.monitor .rec::before{content:"●"; animation:pulse 1s infinite;}
-.monitor .timestamp{
-  position:absolute; bottom:12px; right:14px; font-size:11px; color:#6a6a6a; z-index:2;
-}
-.monitor .idle-txt{color:#3a3a3a; font-size:13px; letter-spacing:0.08em;}
-.monitor .flash-txt{
-  font-family:'Creepster',cursive; font-size:44px; color:#fff; text-align:center;
-  text-shadow:0 0 30px #f00, 0 0 60px #f00;
-}
-.monitor.flashing{animation:flashbg 0.08s steps(1) 6;}
-@keyframes flashbg{
-  0%{background:#fff;} 20%{background:#900;} 40%{background:#000;} 60%{background:#fff;} 80%{background:#600;} 100%{background:#000;}
-}
-.monitor.flashing .flash-txt{animation:shake 0.06s linear infinite;}
-@keyframes shake{
-  0%{transform:translate(0,0) skew(0deg);} 25%{transform:translate(-6px,3px) skew(-3deg);}
-  50%{transform:translate(5px,-4px) skew(2deg);} 75%{transform:translate(-4px,2px) skew(-1deg);} 100%{transform:translate(0,0);}
-}
-
-pre.code{
-  background:#050505; border:1px solid var(--line); border-radius:3px;
-  padding:16px; font-size:11.5px; line-height:1.6; overflow-x:auto; color:var(--rot-bright);
-  max-height:340px; overflow-y:auto;
-}
-.filetree{font-size:12.5px; line-height:2; color:var(--bone-dim);}
-.filetree .f{color:var(--bone);}
-.filetree .dir{color:var(--blood-bright);}
-.empty-state{
-  text-align:center; padding:50px 20px; color:var(--bone-dim); font-size:13px;
-  border:1px dashed var(--line); border-radius:4px;
-}
-.section-label{font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--rot-bright); margin:28px 0 12px; display:flex; align-items:center; gap:10px;}
-.section-label::after{content:""; flex:1; height:1px; background:var(--line);}
+  @media (prefers-reduced-motion: reduce){
+    #scare img, #scareText{ animation:none !important; }
+  }
 </style>
 </head>
 <body>
-<div class="vignette"></div>
 
-<header class="hero">
-  <p class="eyebrow">Bedrock Addon Toolsmith</p>
-  <h1 class="title">DREAD<span class="glitch-slice">CRAFT</span></h1>
-  <p class="sub">Rakit addon horor Minecraft PE-mu di sini: mob jahat/baik, item pemicu, dan jumpscare lengkap dengan suara serta getaran layar. Semua diekspor jadi behavior pack siap pakai.</p>
-</header>
+  <div id="quizWrap">
+    <div class="card">
+      <div class="topbar">
+        <span>TES IQ CEPAT</span>
+        <span class="badge">10 SOAL</span>
+      </div>
+      <div class="progress"><div class="progress-bar" id="bar"></div></div>
 
-<div class="layout">
-  <nav class="tabs" id="tabs"></nav>
-  <main id="main"></main>
-</div>
+      <div class="screen active" id="q1">
+        <div class="qnum">Soal 1 dari 10 — Deret Angka</div>
+        <h1>Lanjutkan pola deret berikut:</h1>
+        <div class="seq">2, 4, 8, 16, ?</div>
+        <div class="options">
+          <button class="opt" data-next="q2">24</button>
+          <button class="opt" data-next="q2">30</button>
+          <button class="opt" data-next="q2">32</button>
+          <button class="opt" data-next="q2">36</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q2">
+        <div class="qnum">Soal 2 dari 10 — Analogi</div>
+        <h1>Kunci berhubungan dengan Gembok, seperti...</h1>
+        <div class="seq">Kunci : Gembok = ? : Mesin</div>
+        <div class="options">
+          <button class="opt" data-next="q3">Roda</button>
+          <button class="opt" data-next="q3">Kunci Kontak</button>
+          <button class="opt" data-next="q3">Bensin</button>
+          <button class="opt" data-next="q3">Ban</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q3">
+        <div class="qnum">Soal 3 dari 10 — Cari yang Berbeda</div>
+        <h1>Mana yang tidak sekelompok dengan yang lain?</h1>
+        <div class="options">
+          <button class="opt" data-next="q4">Segitiga</button>
+          <button class="opt" data-next="q4">Persegi</button>
+          <button class="opt" data-next="q4">Lingkaran</button>
+          <button class="opt" data-next="q4">Kubus</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q4">
+        <div class="qnum">Soal 4 dari 10 — Deret Huruf</div>
+        <h1>Lanjutkan pola huruf berikut:</h1>
+        <div class="seq">A, C, E, G, ?</div>
+        <div class="options">
+          <button class="opt" data-next="q5">H</button>
+          <button class="opt" data-next="q5">I</button>
+          <button class="opt" data-next="q5">J</button>
+          <button class="opt" data-next="q5">K</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q5">
+        <div class="qnum">Soal 5 dari 10 — Pola Tersembunyi</div>
+        <h1>Kalau 5+3=28, 9+1=810, dan 8+6=214, maka:</h1>
+        <div class="seq">6 + 4 = ?</div>
+        <div class="options">
+          <button class="opt" data-next="q6">210</button>
+          <button class="opt" data-next="q6">10</button>
+          <button class="opt" data-next="q6">24</button>
+          <button class="opt" data-next="q6">102</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q6">
+        <div class="qnum">Soal 6 dari 10 — Analogi Angka</div>
+        <h1>Jika 3 berhubungan dengan 9, maka:</h1>
+        <div class="seq">3 : 9 = 5 : ?</div>
+        <div class="options">
+          <button class="opt" data-next="q7">10</button>
+          <button class="opt" data-next="q7">15</button>
+          <button class="opt" data-next="q7">20</button>
+          <button class="opt" data-next="q7">25</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q7">
+        <div class="qnum">Soal 7 dari 10 — Deret Kuadrat</div>
+        <h1>Lanjutkan pola angka berikut:</h1>
+        <div class="seq">1, 4, 9, 16, 25, ?</div>
+        <div class="options">
+          <button class="opt" data-next="q8">30</button>
+          <button class="opt" data-next="q8">32</button>
+          <button class="opt" data-next="q8">36</button>
+          <button class="opt" data-next="q8">42</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q8">
+        <div class="qnum">Soal 8 dari 10 — Logika</div>
+        <h1>Semua kucing adalah hewan. Semua hewan butuh makan. Maka...</h1>
+        <div class="options">
+          <button class="opt wide" data-next="q9">Semua kucing butuh makan</button>
+        </div>
+        <div class="options">
+          <button class="opt" data-next="q9">Benar</button>
+          <button class="opt" data-next="q9">Salah</button>
+          <button class="opt" data-next="q9">Tidak Tentu</button>
+          <button class="opt" data-next="q9">Tidak Ada Hubungan</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q9">
+        <div class="qnum">Soal 9 dari 10 — Deret Pecahan</div>
+        <h1>Lanjutkan pola angka berikut:</h1>
+        <div class="seq">100, 50, 25, 12.5, ?</div>
+        <div class="options">
+          <button class="opt" data-next="q10">6.25</button>
+          <button class="opt" data-next="q10">6</button>
+          <button class="opt" data-next="q10">5</button>
+          <button class="opt" data-next="q10">7.5</button>
+        </div>
+      </div>
+
+      <div class="screen" id="q10">
+        <div class="qnum">Soal 10 dari 10 — Cari yang Berbeda</div>
+        <h1>Mana kata yang tidak sekelompok dengan yang lain?</h1>
+        <div class="options">
+          <button class="opt" data-next="loading">Apel</button>
+          <button class="opt" data-next="loading">Jeruk</button>
+          <button class="opt" data-next="loading">Wortel</button>
+          <button class="opt" data-next="loading">Mangga</button>
+        </div>
+      </div>
+
+      <div class="screen" id="loading">
+        <div class="resultBox">
+          <div class="qnum">Menghitung Skor</div>
+          <h1 style="text-align:center;">Menganalisis pola jawabanmu...</h1>
+          <div class="loadingDots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+
+      <div class="screen" id="result">
+        <div class="resultBox">
+          <div class="emoji">🧠</div>
+          <div class="qnum" style="text-align:center;">Skor IQ Kamu Sudah Siap</div>
+          <h1 style="text-align:center;">Hasil tes kamu berhasil dihitung</h1>
+          <p>Klik tombol di bawah untuk melihat skor IQ dan penjelasan lengkapnya.</p>
+          <button id="seeResult">Lihat Skor IQ Saya</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="scare" aria-hidden="true">
+    <img src="image.png" alt="">
+    <div id="scareText">BOOO, FRANK!</div>
+  </div>
+  <div id="flash"></div>
+  <audio id="scareSound" src="sound.mp3" preload="auto"></audio>
+
+  <div id="reveal">
+    <div class="card">
+      <h2>Gotcha, <span>Frank!</span> 😂</h2>
+      <p>Bukan skor IQ beneran — itu cuma jumpscare. Selamat, kamu resmi kena prank hari ini.
+        Sekarang giliran kamu balas dendam ke yang ngirim link ini.</p>
+      <button id="again">Ulangi dari Awal</button>
+    </div>
+  </div>
 
 <script>
-// ---------- STATE ----------
-const state = {
-  tab: 'info',
-  info: { name:'Shadow of the Deep', description:'Addon horor dengan mob jahat, item pemicu, dan jumpscare.', author:'Anonymous', packColor:'blood' },
-  mobs: [],
-  items: [],
-  jumpscares: [],
-  commands: []
-};
-const uid = () => Math.random().toString(36).slice(2,9);
-const BASE_MOBS = ['zombie','skeleton','warden','husk','drowned','creeper','enderman','phantom','vindicator','custom'];
+  const bar = document.getElementById('bar');
+  const screens = document.querySelectorAll('.screen');
+  const scare = document.getElementById('scare');
+  const flash = document.getElementById('flash');
+  const reveal = document.getElementById('reveal');
+  const quizWrap = document.getElementById('quizWrap');
+  const scareSound = document.getElementById('scareSound');
 
-function newMob(){
-  return { id:uid(), name:'Pengintai Bayangan', baseType:'zombie', behavior:'hostile',
-    health:20, damage:5, speed:1.0, sound:'mob.zombie.say', jumpscareOnSpawn:'',
-    textureName:'', textureData:null, modelName:'', modelData:null, geometryId:'',
-    soundName:'', soundData:null, soundExt:'' };
-}
-function newItem(){
-  return { id:uid(), name:'Lonceng Terkutuk', baseItem:'bell', trigger:'use',
-    linkedJumpscare:'', cooldownTicks:100, iconName:'', iconData:null };
-}
-function newJumpscare(){
-  return { id:uid(), name:'Wajah di Kegelapan', soundEvent:'mob.wither.spawn',
-    screenText:'DIA MELIHATMU', shakeIntensity:0.8, shakeDuration:1.2, particle:'minecraft:large_smoke', cooldown:5,
-    soundName:'', soundData:null, soundExt:'' };
-}
-function newCommand(){
-  return { id:uid(), name:'perintah_baru', description:'Perintah kustom', lines:'say Halo dari DreadCraft!', registerSlash:true };
-}
-
-// ---------- TABS ----------
-const TABS = [
-  {id:'info', label:'Info Addon', num:'01'},
-  {id:'mobs', label:'Mob', num:'02'},
-  {id:'items', label:'Item Pemicu', num:'03'},
-  {id:'jumpscares', label:'Jumpscare', num:'04'},
-  {id:'commands', label:'Perintah Kustom', num:'05'},
-  {id:'export', label:'Ekspor', num:'06'},
-];
-
-function renderTabs(){
-  const nav = document.getElementById('tabs');
-  nav.innerHTML = TABS.map(t => `
-    <button class="${state.tab===t.id?'active':''}" data-tab="${t.id}">
-      <span class="num">${t.num}</span> ${t.label}
-    </button>`).join('');
-  nav.querySelectorAll('button').forEach(b=>{
-    b.addEventListener('click', ()=>{ state.tab=b.dataset.tab; renderAll(); });
-  });
-}
-
-function renderAll(){
-  renderTabs();
-  const main = document.getElementById('main');
-  if(state.tab==='info') main.innerHTML = viewInfo();
-  if(state.tab==='mobs') main.innerHTML = viewMobs();
-  if(state.tab==='items') main.innerHTML = viewItems();
-  if(state.tab==='jumpscares') main.innerHTML = viewJumpscares();
-  if(state.tab==='commands') main.innerHTML = viewCommands();
-  if(state.tab==='export') main.innerHTML = viewExport();
-  bindEvents();
-}
-
-// ---------- VIEWS ----------
-function viewInfo(){
-  return `
-    <h2 class="panel-title">🩸 Info Addon</h2>
-    <p class="panel-desc">Identitas dasar behavior pack. Nama ini akan muncul di daftar addon dalam game.</p>
-    <div class="field"><label>Nama Addon</label><input type="text" id="i-name" value="${esc(state.info.name)}"></div>
-    <div class="field"><label>Deskripsi</label><textarea id="i-desc">${esc(state.info.description)}</textarea></div>
-    <div class="grid2">
-      <div class="field"><label>Author</label><input type="text" id="i-author" value="${esc(state.info.author)}"></div>
-      <div class="field"><label>Tema Warna Pack</label>
-        <select id="i-color">
-          <option value="blood" ${state.info.packColor==='blood'?'selected':''}>Merah Darah</option>
-          <option value="rot" ${state.info.packColor==='rot'?'selected':''}>Hijau Busuk (Zombie/Warden)</option>
-          <option value="void" ${state.info.packColor==='void'?'selected':''}>Ungu Void (Enderman)</option>
-        </select>
-      </div>
-    </div>
-    <p class="hint">Ringkasan: ${state.mobs.length} mob, ${state.items.length} item pemicu, ${state.jumpscares.length} jumpscare dikonfigurasi.</p>
-  `;
-}
-
-function viewMobs(){
-  const cards = state.mobs.map(m=>`
-    <div class="card ${m.baseType==='warden'?'card-warden':(m.behavior==='passive'?'card-rot':'')}" data-id="${m.id}">
-      <div class="card-head">
-        <span class="name">${esc(m.name)||'(tanpa nama)'}</span>
-        <span class="tag">${m.baseType} · ${m.behavior}</span>
-      </div>
-      <div class="grid3">
-        <div class="field"><label>Nama Mob</label><input type="text" class="m-name" value="${esc(m.name)}"></div>
-        <div class="field"><label>Mob Dasar</label>
-          <select class="m-base">${BASE_MOBS.map(b=>`<option value="${b}" ${m.baseType===b?'selected':''}>${b}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>Sifat</label>
-          <select class="m-behavior">
-            <option value="hostile" ${m.behavior==='hostile'?'selected':''}>Jahat (menyerang)</option>
-            <option value="passive" ${m.behavior==='passive'?'selected':''}>Baik (damai)</option>
-            <option value="neutral" ${m.behavior==='neutral'?'selected':''}>Netral (menyerang jika diserang)</option>
-          </select>
-        </div>
-      </div>
-      <div class="grid3">
-        <div class="field"><label>Health</label><input type="number" class="m-health" value="${m.health}" min="1"></div>
-        <div class="field"><label>Damage Serangan</label><input type="number" class="m-damage" value="${m.damage}" min="0"></div>
-        <div class="field"><label>Kecepatan (x)</label><input type="number" step="0.1" class="m-speed" value="${m.speed}" min="0.1"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>Suara Ambient (nama vanilla, dipakai jika tak upload file suara)</label><input type="text" class="m-sound" value="${esc(m.sound)}" placeholder="mob.zombie.say"></div>
-        <div class="field"><label>Trigger Jumpscare Saat Muncul</label>
-          <select class="m-jumpscare">
-            <option value="">— Tidak ada —</option>
-            ${state.jumpscares.map(j=>`<option value="${j.id}" ${m.jumpscareOnSpawn===j.id?'selected':''}>${esc(j.name)}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-      <div class="section-label" style="margin:18px 0 10px;">Kustomisasi Tampilan &amp; Suara (opsional)</div>
-      <div class="grid3">
-        <div class="field"><label>Tekstur (PNG)</label>
-          <input type="file" accept="image/png" class="m-texture-file">
-          <p class="hint">${m.textureName ? '✓ '+esc(m.textureName) : 'Belum ada file. Tanpa ini, model dasar mob dipakai.'}</p>
-        </div>
-        <div class="field"><label>Model 3D (.geo.json)</label>
-          <input type="file" accept="application/json,.json" class="m-model-file">
-          <p class="hint">${m.modelName ? '✓ '+esc(m.modelName) : 'Opsional, format geometry Bedrock.'}</p>
-        </div>
-        <div class="field"><label>Suara Kustom (.ogg disarankan)</label>
-          <input type="file" accept="audio/*" class="m-sound-file">
-          <p class="hint">${m.soundName ? '✓ '+esc(m.soundName) : 'Minecraft Bedrock hanya benar-benar mendukung .ogg.'}</p>
-        </div>
-      </div>
-      <div class="field"><label>ID Geometry (otomatis terisi dari file model, bisa diedit)</label><input type="text" class="m-geo-id" value="${esc(m.geometryId)}" placeholder="geometry.dreadcraft.namamobmu"></div>
-      <button class="ghost danger m-remove">Hapus Mob</button>
-    </div>
-  `).join('');
-
-  return `
-    <h2 class="panel-title">👹 Mob</h2>
-    <p class="panel-desc">Tentukan mob jahat atau baik, dibangun dari mob dasar vanilla (zombie, skeleton, warden, dsb) dengan statistik dan suara custom.</p>
-    ${state.mobs.length ? cards : `<div class="empty-state">Belum ada mob. Tambahkan mob pertamamu.</div>`}
-    <button class="add-btn" id="add-mob">+ Tambah Mob</button>
-  `;
-}
-
-function viewItems(){
-  const cards = state.items.map(it=>`
-    <div class="card" data-id="${it.id}">
-      <div class="card-head">
-        <span class="name">${esc(it.name)||'(tanpa nama)'}</span>
-        <span class="tag">${it.trigger}</span>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>Nama Item</label><input type="text" class="it-name" value="${esc(it.name)}"></div>
-        <div class="field"><label>Item Dasar</label><input type="text" class="it-base" value="${esc(it.baseItem)}" placeholder="bell, stick, compass, dst"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>Pemicu Saat</label>
-          <select class="it-trigger">
-            <option value="use" ${it.trigger==='use'?'selected':''}>Item digunakan (klik kanan)</option>
-            <option value="hit_entity" ${it.trigger==='hit_entity'?'selected':''}>Item memukul mob</option>
-            <option value="place" ${it.trigger==='place'?'selected':''}>Item dipakai ke blok (mis. ditaruh)</option>
-          </select>
-        </div>
-        <div class="field"><label>Cooldown (tick)</label><input type="number" class="it-cooldown" value="${it.cooldownTicks}" min="0"></div>
-      </div>
-      <div class="field"><label>Jumpscare Terhubung</label>
-        <select class="it-jumpscare">
-          <option value="">— Pilih jumpscare —</option>
-          ${state.jumpscares.map(j=>`<option value="${j.id}" ${it.linkedJumpscare===j.id?'selected':''}>${esc(j.name)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field"><label>Ikon Kustom (PNG, opsional)</label>
-        <input type="file" accept="image/png" class="it-icon-file">
-        <p class="hint">${it.iconName ? '✓ '+esc(it.iconName) : 'Tanpa ini, ikon item dasar vanilla dipakai.'}</p>
-      </div>
-      <button class="ghost danger it-remove">Hapus Item</button>
-    </div>
-  `).join('');
-
-  return `
-    <h2 class="panel-title">🔔 Item Pemicu</h2>
-    <p class="panel-desc">Item yang bila dipakai/dipukulkan akan memicu jumpscare yang sudah kamu buat.</p>
-    ${state.items.length ? cards : `<div class="empty-state">Belum ada item pemicu.</div>`}
-    <button class="add-btn" id="add-item">+ Tambah Item</button>
-  `;
-}
-
-function viewJumpscares(){
-  const cards = state.jumpscares.map(j=>`
-    <div class="card card-warden" data-id="${j.id}">
-      <div class="card-head">
-        <span class="name">${esc(j.name)||'(tanpa nama)'}</span>
-        <span class="tag">cooldown ${j.cooldown}s</span>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>Nama Jumpscare</label><input type="text" class="j-name" value="${esc(j.name)}"></div>
-        <div class="field"><label>Sound Event</label><input type="text" class="j-sound" value="${esc(j.soundEvent)}" placeholder="mob.wither.spawn"></div>
-      </div>
-      <div class="field"><label>Teks di Layar</label><input type="text" class="j-text" value="${esc(j.screenText)}"></div>
-      <div class="grid3">
-        <div class="field"><label>Intensitas Guncangan</label><input type="number" step="0.1" class="j-shake-i" value="${j.shakeIntensity}" min="0" max="1"></div>
-        <div class="field"><label>Durasi Guncangan (dtk)</label><input type="number" step="0.1" class="j-shake-d" value="${j.shakeDuration}" min="0"></div>
-        <div class="field"><label>Cooldown (dtk)</label><input type="number" class="j-cooldown" value="${j.cooldown}" min="0"></div>
-      </div>
-      <div class="field"><label>Partikel</label><input type="text" class="j-particle" value="${esc(j.particle)}" placeholder="minecraft:large_smoke"></div>
-      <div class="field"><label>Suara Kustom — .ogg disarankan (menggantikan Sound Event di atas)</label>
-        <input type="file" accept="audio/*" class="j-sound-file">
-        <p class="hint">${j.soundName ? '✓ '+esc(j.soundName) : 'Tanpa ini, Sound Event vanilla di atas dipakai. Minecraft Bedrock hanya benar-benar mendukung .ogg.'}</p>
-      </div>
-      <p class="hint">Perintah in-game: <code>/scriptevent dreadcraft:scare_${slug(j.name)}</code> · eksperimental: <code>/dreadcraft:scare ${slug(j.name)}</code> (butuh Beta APIs)</p>
-      <div style="display:flex; gap:10px; margin-top:8px;">
-        <button class="ghost j-test">▶ Uji Coba</button>
-        <button class="ghost danger j-remove">Hapus</button>
-      </div>
-    </div>
-  `).join('');
-
-  return `
-    <h2 class="panel-title">📼 Jumpscare</h2>
-    <p class="panel-desc">Efek kaget: suara, teks layar, guncangan kamera, dan partikel. Selain dipicu dari mob/item, tiap jumpscare otomatis bisa dipanggil lewat command in-game (<code>/scriptevent</code>, atau slash command kustom eksperimental via Beta API) — cocok untuk command block, tripwire, atau NPC dialogue.</p>
-    <div class="monitor" id="monitor">
-      <div class="rec">REC</div>
-      <div class="timestamp" id="timestamp">00:00:00</div>
-      <div class="idle-txt" id="monitor-content">— sinyal tenang —</div>
-    </div>
-    ${state.jumpscares.length ? cards : `<div class="empty-state">Belum ada jumpscare. Buat efek kaget pertamamu.</div>`}
-    <button class="add-btn" id="add-jumpscare">+ Tambah Jumpscare</button>
-  `;
-}
-
-function viewCommands(){
-  const cards = state.commands.map(c=>`
-    <div class="card" data-id="${c.id}">
-      <div class="card-head">
-        <span class="name">${esc(c.name)||'(tanpa nama)'}</span>
-        <span class="tag">/dreadcraft:${slug(c.name)}</span>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>Nama Perintah</label><input type="text" class="c-name" value="${esc(c.name)}" placeholder="mis. buka_ruang_rahasia"></div>
-        <div class="field"><label>Deskripsi</label><input type="text" class="c-desc" value="${esc(c.description)}"></div>
-      </div>
-      <div class="field"><label>Daftar Command Minecraft (satu per baris)</label>
-        <textarea class="c-lines" rows="5" placeholder="say Halo!&#10;playsound mob.wither.spawn @a&#10;summon dreadcraft:pengintai_bayangan">${esc(c.lines)}</textarea>
-        <p class="hint">Setiap baris dijalankan berurutan, sama seperti isi file .mcfunction.</p>
-      </div>
-      <div class="field">
-        <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-size:12px;">
-          <input type="checkbox" class="c-slash" ${c.registerSlash?'checked':''} style="width:auto;">
-          Daftarkan juga sebagai slash command <code>/dreadcraft:${slug(c.name)}</code> (butuh Beta APIs)
-        </label>
-      </div>
-      <p class="hint">Selalu bisa dipanggil stabil lewat: <code>/scriptevent dreadcraft:cmd_${slug(c.name)}</code> — cocok untuk command block, NPC dialogue, atau tripwire.</p>
-      <button class="ghost danger c-remove">Hapus Perintah</button>
-    </div>
-  `).join('');
-
-  return `
-    <h2 class="panel-title">⌨ Perintah Kustom</h2>
-    <p class="panel-desc">Buat perintah in-game buatanmu sendiri — kumpulan command Minecraft apa pun (summon, say, playsound, particle, teleport, dll) yang dipanggil lewat satu perintah saja, lewat command block, atau NPC dialogue.</p>
-    ${state.commands.length ? cards : `<div class="empty-state">Belum ada perintah kustom. Tambahkan yang pertama.</div>`}
-    <button class="add-btn" id="add-command">+ Tambah Perintah Kustom</button>
-  `;
-}
-
-function viewExport(){
-  const files = buildFiles();
-  const treeLines = Object.keys(files).sort().map(p=>{
-    const depth = p.split('/').length-1;
-    const fname = p.split('/').pop();
-    return `<div style="padding-left:${depth*16}px" class="f">${fname}</div>`;
-  }).join('');
-  const preview = files['manifest.json'] || '';
-  return `
-    <h2 class="panel-title">📦 Ekspor Behavior Pack</h2>
-    <p class="panel-desc">File di bawah ini siap dimasukkan ke folder <em>com.mojang/development_behavior_packs/</em> (dan <em>development_resource_packs/</em> jika kamu pakai tekstur/model/suara kustom) di perangkatmu — lihat README.txt untuk detail lengkap.</p>
-    <div class="section-label">Struktur File</div>
-    <div class="filetree">${treeLines || '<div class="empty-state">Tambahkan mob/item/jumpscare dulu.</div>'}</div>
-    <div class="section-label">Pratinjau manifest.json</div>
-    <pre class="code">${esc(preview)}</pre>
-    <div class="section-label">Unduh</div>
-    <p class="hint" style="margin-bottom:14px;">ZIP berisi manifest, entity mob, item pemicu, fungsi jumpscare & perintah kustom (.mcfunction), resource pack (tekstur/model/suara jika diupload), dan README cara pasang.</p>
-    <button class="primary" id="download-zip">⬇ Unduh Addon (.zip)</button>
-  `;
-}
-
-// ---------- HELPERS ----------
-function esc(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function slug(s){ return String(s||'addon').toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || 'addon'; }
-
-function buildFiles(){
-  const files = {};
-  const packSlug = slug(state.info.name);
-  const uuidHeader = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
-  const uuidModule = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
-
-  const uuidScriptModule = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
-
-  files['manifest.json'] = JSON.stringify({
-    format_version: 2,
-    header: {
-      name: state.info.name,
-      description: state.info.description,
-      uuid: uuidHeader,
-      version: [1,0,0],
-      min_engine_version: [1,21,80]
-    },
-    modules: [
-      { type: "data", uuid: uuidModule, version: [1,0,0] },
-      { type: "script", language: "javascript", uuid: uuidScriptModule, entry: "scripts/main.js", version: [1,0,0] }
-    ],
-    dependencies: [
-      { module_name: "@minecraft/server", version: "2.0.0-beta" }
-    ]
-  }, null, 2);
-
-  files['README.txt'] =
-`DREADCRAFT — ${state.info.name}
-Dibuat oleh: ${state.info.author}
-
-CARA PASANG:
-1. Salin semua folder & file DI LUAR "resource_pack/" ke:
-   com.mojang/development_behavior_packs/${packSlug}/
-2. Jika ada folder "resource_pack/" di dalam zip ini (artinya kamu
-   pakai tekstur/model/suara kustom), salin ISI folder tersebut ke:
-   com.mojang/development_resource_packs/${packSlug}_rp/
-3. Buat dunia baru (atau buka dunia yang sudah ada Beta API sebelumnya),
-   lalu di pengaturan dunia -> Experiments, AKTIFKAN toggle "Beta APIs".
-   Ini WAJIB agar file scripts/main.js dan command kustom bisa jalan.
-4. Aktifkan behavior pack ini DAN resource pack-nya (jika ada) di
-   pengaturan dunia tersebut.
-5. Untuk mob & item bekerja penuh, jalankan sekali di dunia:
-   /function init
-
-CARA MEMICU JUMPSCARE LEWAT COMMAND:
-- Cara paling stabil (tidak butuh Beta APIs, cukup cheat aktif):
-    /scriptevent dreadcraft:scare_<id_jumpscare>
-  Contoh: /scriptevent dreadcraft:scare_wajah_di_kegelapan
-- Cara eksperimental (custom slash command, BUTUH Beta APIs aktif):
-    /dreadcraft:scare <id_jumpscare>
-  Command ini muncul di autocomplete chat setelah pack dimuat.
-- Daftar id_jumpscare tiap jumpscare ada di tab "Jumpscare" pada alat ini,
-  dan juga tertulis sebagai komentar di scripts/main.js.
-- Command ini juga bisa dipanggil dari command block, NPC dialogue,
-  atau addon lain — cocok untuk trigger area/tripwire/redstone.
-
-CARA MENJALANKAN PERINTAH KUSTOM (tab "Perintah Kustom"):
-- Cara paling stabil: /scriptevent dreadcraft:cmd_<id_perintah>
-- Cara eksperimental (BUTUH Beta APIs, dan hanya jika kamu centang
-  "Daftarkan sebagai slash command" saat membuatnya): setiap perintah
-  kustom punya slash command sendiri, yaitu /dreadcraft:<id_perintah>
-  (bukan lewat perintah pemilih bersama — nama command-nya persis
-  nama yang kamu isi di tab "Perintah Kustom", jadi 100% custom).
-- Setiap perintah kustom juga tersimpan sebagai file .mcfunction biasa
-  di functions/custom/, jadi bisa dipanggil manual lewat:
-    /function custom/<id_perintah>
-
-CARA KUSTOMISASI TEKSTUR/MODEL/SUARA:
-- Upload file lewat tab Mob (tekstur PNG, model .geo.json, suara),
-  tab Item (ikon PNG), dan tab Jumpscare (suara kustom).
-- Semua file itu otomatis masuk ke folder "resource_pack/" dalam zip
-  ini dan akan muncul begitu resource pack-nya dipasang (lihat langkah
-  pemasangan di atas). Tanpa upload, tampilan/suara vanilla dipakai.
-- Model 3D harus format geometry Bedrock (.geo.json) yang sudah kamu
-  buat sendiri (mis. via Blockbench). ID geometry di dalamnya akan
-  otomatis dideteksi, atau bisa kamu isi manual di field "ID Geometry".
-
-CATATAN PENTING:
-- Mob dibuat sebagai entity baru (bukan menimpa mob vanilla), jadi
-  mob lain di dunia tidak berubah. Tanpa tekstur/model kustom,
-  tampilannya meminjam dari mob dasar yang dipilih (lewat
-  runtime_identifier), tapi statistik (health, damage, speed) dan
-  perilaku (jahat/baik/netral) sudah 100% custom sesuai pengaturanmu.
-- Fitur command kustom memakai Script API versi 2.0.0-beta yang
-  MASIH EKSPERIMENTAL dari Mojang — sintaksnya bisa berubah di update
-  Minecraft berikutnya. Jika suatu saat berhenti bekerja setelah
-  update game, gunakan /scriptevent sebagai cadangan (lebih stabil).
-- Uji di dunia Creative dengan cheat aktif dulu sebelum dipakai di
-  dunia utama. Panggil mob dengan: /summon dreadcraft:<nama_mob>
-
-Isi:
-- entities/       -> definisi tiap mob (dasar dari mob vanilla)
-- items/          -> definisi tiap item pemicu
-- functions/      -> logika jumpscare & perintah kustom berbasis command
-- scripts/        -> pemicu jumpscare/perintah lewat command (scriptevent + Beta API)
-- resource_pack/  -> (jika ada) tekstur, model, dan suara kustommu
-`;
-
-  // collision box presets per base mob so the entity has a sane hitbox in-game
-  const HITBOX = {
-    zombie:{w:0.6,h:1.95}, husk:{w:0.6,h:1.95}, drowned:{w:0.6,h:1.95},
-    skeleton:{w:0.6,h:1.99}, warden:{w:0.9,h:2.9}, creeper:{w:0.6,h:1.7},
-    enderman:{w:0.6,h:2.9}, phantom:{w:0.9,h:0.5}, vindicator:{w:0.6,h:1.95},
-    custom:{w:0.6,h:1.95}
-  };
-
-  // entities
-  state.mobs.forEach(m=>{
-    const id = `dreadcraft:${slug(m.name)}`;
-    const box = HITBOX[m.baseType] || HITBOX.custom;
-    const isHostile = m.behavior==='hostile';
-    const isNeutral = m.behavior==='neutral';
-    const canFly = m.baseType==='phantom';
-
-    const components = {
-      "minecraft:type_family": { "family": [isHostile ? 'monster' : 'mob', m.baseType] },
-      "minecraft:health": { "value": Number(m.health)||20, "max": Number(m.health)||20 },
-      "minecraft:attack": { "damage": Number(m.damage)||0 },
-      "minecraft:collision_box": { "width": box.w, "height": box.h },
-      "minecraft:physics": {},
-      "minecraft:pushable": { "is_pushable": true, "is_pushable_by_piston": true },
-      "minecraft:knockback_resistance": { "value": 0 },
-      "minecraft:movement": { "value": Number(m.speed)||1.0 },
-      "minecraft:movement.basic": {},
-      "minecraft:jump.static": {},
-      "minecraft:navigation.walk": { "can_path_over_water": true, "avoid_water": !canFly, "avoid_damage_blocks": true },
-      "minecraft:behavior.float": { "priority": 0 },
-      "minecraft:behavior.random_stroll": { "priority": 6, "speed_multiplier": 1.0 },
-      "minecraft:behavior.random_look_around": { "priority": 8 },
-      "minecraft:behavior.look_at_player": { "priority": 7, "look_distance": 8, "probability": 0.02 },
-      "minecraft:is_hidden_when_invisible": {}
-    };
-    if(isHostile || isNeutral){
-      components["minecraft:behavior.hurt_by_target"] = { "priority": 1 };
-      components["minecraft:behavior.melee_attack"] = { "priority": 3, "speed_multiplier": 1.0, "track_target": true };
-    }
-    if(isHostile){
-      components["minecraft:behavior.nearest_attackable_target"] = {
-        "priority": 2, "within_radius": 16, "must_see": true,
-        "entity_types": [{ "filters": { "test":"is_family","subject":"other","value":"player" }, "max_dist": 16 }]
-      };
-    }
-    if(m.soundData){
-      components["minecraft:ambient_sound_interval"] = { "value": 8, "event_name": "ambient" };
-    }
-
-    files[`entities/${slug(m.name)}.json`] = JSON.stringify({
-      "format_version": "1.20.0",
-      "minecraft:entity": {
-        "description": {
-          "identifier": id,
-          "is_spawnable": true,
-          "is_summonable": true,
-          "runtime_identifier": `minecraft:${m.baseType==='custom'?'zombie':m.baseType}`
-        },
-        "components": components,
-        "component_groups": m.jumpscareOnSpawn ? {
-          "dreadcraft:on_spawn_scare": {
-            "minecraft:timer": {
-              "time": 0.1, "looping": false,
-              "time_down_event": { "event": "dreadcraft:run_spawn_scare", "target": "self" }
-            }
-          }
-        } : undefined,
-        "events": m.jumpscareOnSpawn ? {
-          "minecraft:entity_spawned": { "add": { "component_groups": ["dreadcraft:on_spawn_scare"] } },
-          "dreadcraft:run_spawn_scare": {
-            "run_command": { "command": [`function jumpscares/${slug(jumpscareName(m.jumpscareOnSpawn))}`] }
-          }
-        } : undefined
-      }
-    }, null, 2);
-  });
-
-  // items — map each trigger type to its real Bedrock item component + event key
-  const TRIGGER_MAP = {
-    use:        { component: 'minecraft:on_use',        key: 'on_use' },
-    hit_entity: { component: 'minecraft:on_hit_entity',  key: 'on_hit' },
-    place:      { component: 'minecraft:on_use_on',      key: 'on_use' } // "diletakkan/dipakai pada blok"
-  };
-  state.items.forEach(it=>{
-    const id = `dreadcraft:${slug(it.name)}`;
-    const map = TRIGGER_MAP[it.trigger] || TRIGGER_MAP.use;
-    files[`items/${slug(it.name)}.json`] = JSON.stringify({
-      "format_version": "1.20.0",
-      "minecraft:item": {
-        "description": { "identifier": id, "category": "items" },
-        "components": {
-          "minecraft:max_stack_size": 1,
-          "minecraft:cooldown": { "category": slug(it.name), "duration": (Number(it.cooldownTicks)||0)/20 },
-          "minecraft:icon": { "texture": it.iconData ? slug(it.name) : (slug(it.baseItem) || "stick") },
-          "minecraft:hand_equipped": true,
-          [map.component]: { [map.key]: { "event": "dreadcraft:trigger_scare", "target": "self" } }
-        },
-        "events": {
-          "dreadcraft:trigger_scare": {
-            "run_command": {
-              "command": [ it.linkedJumpscare ? `function jumpscares/${slug(jumpscareName(it.linkedJumpscare))}` : "say (belum ada jumpscare terhubung)" ]
-            }
-          }
-        }
-      }
-    }, null, 2);
-  });
-
-  // jumpscare functions
-  state.jumpscares.forEach(j=>{
-    const fname = slug(j.name);
-    const resolvedSound = j.soundData ? `dreadcraft.jumpscare.${fname}` : (j.soundEvent||'mob.wither.spawn');
-    files[`functions/jumpscares/${fname}.mcfunction`] =
-`# Jumpscare: ${j.name}
-# Cooldown yang disarankan: ${j.cooldown} detik (atur sendiri via scoreboard jika perlu)
-playsound ${resolvedSound} @a ~ ~ ~ 1 0.6
-camerashake add @a ${j.shakeIntensity||0.8} ${j.shakeDuration||1} positional
-title @a title §4§l${(j.screenText||'').toUpperCase()}
-title @a subtitle §7...
-particle ${j.particle||'minecraft:large_smoke'} ~ ~1 ~
-`;
-  });
-
-  // custom command functions
-  state.commands.forEach(c=>{
-    const cname = slug(c.name);
-    const lines = (c.lines||'').split('\n').map(l=>l.trim()).filter(Boolean);
-    files[`functions/custom/${cname}.mcfunction`] =
-`# Perintah Kustom: ${c.name}
-# ${c.description||''}
-${lines.join('\n')}
-`;
-  });
-
-  files['functions/init.mcfunction'] =
-`# Jalankan sekali saat dunia dimuat: /function init
-gamerule commandblockoutput false
-say DreadCraft aktif: ${state.info.name}
-`;
-
-  // scripts/main.js — pemicu jumpscare & perintah kustom lewat command (scriptevent stabil + custom command Beta API)
-  if(state.jumpscares.length || state.commands.length){
-    const jsonMap = JSON.stringify(
-      Object.fromEntries(state.jumpscares.map(j => [slug(j.name), {
-        sound: j.soundData ? `dreadcraft.jumpscare.${slug(j.name)}` : (j.soundEvent || 'mob.wither.spawn'),
-        text: j.screenText || '...',
-        shakeIntensity: Number(j.shakeIntensity) || 0.8,
-        shakeDuration: Number(j.shakeDuration) || 1,
-        particle: j.particle || 'minecraft:large_smoke'
-      }])),
-      null, 2
-    );
-    const ids = state.jumpscares.map(j=>`"${slug(j.name)}"`).join(', ');
-    const cmdLinesMap = JSON.stringify(
-      Object.fromEntries(state.commands.map(c => [slug(c.name),
-        (c.lines||'').split('\n').map(l=>l.trim()).filter(Boolean)
-      ])),
-      null, 2
-    );
-    const slashCommands = state.commands.filter(c=>c.registerSlash);
-
-    files['scripts/main.js'] =
-`// DreadCraft — pemicu jumpscare & perintah kustom lewat command (Script API, Beta APIs)
-// Jumpscare: ${state.jumpscares.map(j=>slug(j.name)).join(', ') || '(tidak ada)'}
-// Perintah kustom: ${state.commands.map(c=>slug(c.name)).join(', ') || '(tidak ada)'}
-import { world, system, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus } from "@minecraft/server";
-
-const JUMPSCARES = ${jsonMap};
-const CUSTOM_COMMANDS = ${cmdLinesMap};
-
-function runJumpscare(id) {
-  const scare = JUMPSCARES[id];
-  if (!scare) return;
-  for (const player of world.getAllPlayers()) {
-    try { player.runCommand(\`playsound \${scare.sound} @s ~ ~ ~ 1 0.6\`); } catch (e) {}
-    try { player.runCommand(\`camerashake add @s \${scare.shakeIntensity} \${scare.shakeDuration} positional\`); } catch (e) {}
-    try { player.runCommand(\`title @s title §4§l\${scare.text.toUpperCase()}\`); } catch (e) {}
-    try { player.runCommand(\`particle \${scare.particle} ~ ~1 ~\`); } catch (e) {}
-  }
-}
-
-function runCustomCommand(id) {
-  const lines = CUSTOM_COMMANDS[id];
-  if (!lines) return;
-  system.run(() => {
-    try { world.getDimension("overworld").runCommand(\`function custom/\${id}\`); } catch (e) {}
-  });
-}
-
-// Cara 1 (stabil, tidak butuh Beta APIs):
-//   /scriptevent dreadcraft:scare_<id_jumpscare>
-//   /scriptevent dreadcraft:cmd_<id_perintah>
-system.afterEvents.scriptEventReceive.subscribe((ev) => {
-  const scarePrefix = "dreadcraft:scare_";
-  const cmdPrefix = "dreadcraft:cmd_";
-  if (ev.id.startsWith(scarePrefix)) {
-    const id = ev.id.slice(scarePrefix.length);
-    system.run(() => runJumpscare(id));
-  } else if (ev.id.startsWith(cmdPrefix)) {
-    const id = ev.id.slice(cmdPrefix.length);
-    system.run(() => runCustomCommand(id));
-  }
-});
-
-// Cara 2 (EKSPERIMENTAL, butuh toggle "Beta APIs" aktif di dunia):
-// mendaftarkan slash command asli: /dreadcraft:scare <id> dan /dreadcraft:<perintah>
-try {
-  system.beforeEvents.startup.subscribe(({ customCommandRegistry }) => {
-    ${ids ? `customCommandRegistry.registerEnum("dreadcraft:jumpscareId", [${ids}]);
-    customCommandRegistry.registerCommand(
-      {
-        name: "dreadcraft:scare",
-        description: "Memicu jumpscare DreadCraft",
-        permissionLevel: CommandPermissionLevel.GameDirectors,
-        mandatoryParameters: [
-          { name: "jumpscareId", type: CustomCommandParamType.Enum, enumName: "dreadcraft:jumpscareId" }
-        ]
-      },
-      (origin, jumpscareId) => {
-        system.run(() => runJumpscare(jumpscareId));
-        return { status: CustomCommandStatus.Success };
-      }
-    );` : '// tidak ada jumpscare terdaftar'}
-    ${slashCommands.length ? slashCommands.map(c=>{
-      const cslug = slug(c.name);
-      return `customCommandRegistry.registerCommand(
-      {
-        name: "dreadcraft:${cslug}",
-        description: ${JSON.stringify(c.description || c.name)},
-        permissionLevel: CommandPermissionLevel.GameDirectors
-      },
-      (origin) => {
-        system.run(() => runCustomCommand("${cslug}"));
-        return { status: CustomCommandStatus.Success };
-      }
-    );`;
-    }).join('\n    ') : '// tidak ada perintah kustom yang didaftarkan sebagai slash command'}
-  });
-} catch (e) {
-  // Custom Commands API belum tersedia di versi Minecraft ini —
-  // /scriptevent di atas tetap berfungsi sebagai cadangan stabil.
-}
-`;
+  const order = ['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','loading','result'];
+  function goTo(id){
+    screens.forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const idx = order.indexOf(id);
+    const pct = Math.round(((idx+1) / order.length) * 100);
+    bar.style.width = pct + '%';
   }
 
-  // ---------- RESOURCE PACK (tekstur, model, suara kustom) ----------
-  const hasCustomAssets = state.mobs.some(m=>m.textureData||m.modelData||m.soundData) ||
-                          state.items.some(it=>it.iconData) ||
-                          state.jumpscares.some(j=>j.soundData);
-
-  if(hasCustomAssets){
-    const uuidRpHeader = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
-    const uuidRpModule = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
-
-    files['resource_pack/manifest.json'] = JSON.stringify({
-      format_version: 2,
-      header: {
-        name: `${state.info.name} (Resource Pack)`,
-        description: `Tekstur, model, dan suara kustom untuk ${state.info.name}`,
-        uuid: uuidRpHeader,
-        version: [1,0,0],
-        min_engine_version: [1,21,80]
-      },
-      modules: [
-        { type: "resources", uuid: uuidRpModule, version: [1,0,0] }
-      ]
-    }, null, 2);
-
-    const GEOMETRY_MAP = {
-      zombie:'geometry.zombie', husk:'geometry.zombie', drowned:'geometry.drowned',
-      skeleton:'geometry.skeleton', warden:'geometry.warden', creeper:'geometry.creeper',
-      enderman:'geometry.enderman', phantom:'geometry.phantom', vindicator:'geometry.vindicator',
-      custom:'geometry.zombie'
-    };
-    const soundDefs = {};
-
-    state.mobs.forEach(m=>{
-      if(!(m.textureData||m.modelData||m.soundData)) return;
-      const mslug = slug(m.name);
-      const geometryId = m.modelData ? (m.geometryId || `geometry.dreadcraft.${mslug}`) : (GEOMETRY_MAP[m.baseType]||GEOMETRY_MAP.custom);
-      const desc = {
-        identifier: `dreadcraft:${mslug}`,
-        materials: { default: "entity_alphatest" },
-        textures: { default: m.textureData ? `textures/entity/${mslug}` : `textures/entity/${m.baseType==='custom'?'zombie':m.baseType}` },
-        geometry: { default: geometryId },
-        render_controllers: [ "controller.render.default" ]
-      };
-      if(m.soundData){
-        soundDefs[`dreadcraft.mob.${mslug}`] = { category:'hostile', sounds:[`sounds/dreadcraft/mob_${mslug}`] };
-        desc.sound_effects = { ambient: `dreadcraft.mob.${mslug}` };
+  document.querySelectorAll('.opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const next = btn.getAttribute('data-next');
+      goTo(next);
+      if (next === 'loading'){
+        setTimeout(() => goTo('result'), 1400);
       }
-      files[`resource_pack/entity/${mslug}.entity.json`] = JSON.stringify({
-        format_version: "1.10.0",
-        "minecraft:client_entity": { description: desc }
-      }, null, 2);
+    });
+  });
+
+  document.getElementById('seeResult').addEventListener('click', () => {
+    quizWrap.style.display = 'none';
+    scare.classList.add('active');
+
+    flash.style.transition = 'none';
+    flash.style.opacity = '0.95';
+    requestAnimationFrame(() => {
+      flash.style.transition = 'opacity .4s ease';
+      flash.style.opacity = '0';
     });
 
-    const itemsWithIcons = state.items.filter(it=>it.iconData);
-    if(itemsWithIcons.length){
-      const texData = {};
-      itemsWithIcons.forEach(it=>{ texData[slug(it.name)] = { textures: `textures/items/${slug(it.name)}` }; });
-      files['resource_pack/textures/item_texture.json'] = JSON.stringify({
-        resource_pack_name: packSlug,
-        texture_name: "atlas.items",
-        texture_data: texData
-      }, null, 2);
-    }
+    if (navigator.vibrate) navigator.vibrate([80,40,80,40,200]);
 
-    state.jumpscares.forEach(j=>{
-      if(!j.soundData) return;
-      soundDefs[`dreadcraft.jumpscare.${slug(j.name)}`] = { category:'record', sounds:[`sounds/dreadcraft/jumpscare_${slug(j.name)}`] };
-    });
+    scareSound.currentTime = 0;
+    scareSound.play().catch(()=>{});
 
-    if(Object.keys(soundDefs).length){
-      files['resource_pack/sounds/sound_definitions.json'] = JSON.stringify({
-        format_version: "1.14.0",
-        sound_definitions: soundDefs
-      }, null, 2);
-    }
-  }
-
-  return files;
-}
-
-// ---------- FILE READING HELPERS ----------
-function readAsArrayBuffer(file){
-  return new Promise((resolve, reject)=>{
-    const r = new FileReader();
-    r.onload = ()=>resolve(r.result);
-    r.onerror = ()=>reject(r.error);
-    r.readAsArrayBuffer(file);
-  });
-}
-function readAsText(file){
-  return new Promise((resolve, reject)=>{
-    const r = new FileReader();
-    r.onload = ()=>resolve(r.result);
-    r.onerror = ()=>reject(r.error);
-    r.readAsText(file);
-  });
-}
-function fileExt(name){
-  const m = /\.([a-z0-9]+)$/i.exec(name||'');
-  return m ? m[1].toLowerCase() : 'ogg';
-}
-
-function jumpscareName(id){
-  const j = state.jumpscares.find(x=>x.id===id);
-  return j ? j.name : 'jumpscare';
-}
-
-// ---------- EVENTS ----------
-function bindEvents(){
-  // info
-  const iName=document.getElementById('i-name');
-  if(iName){
-    iName.addEventListener('input', e=>state.info.name=e.target.value);
-    document.getElementById('i-desc').addEventListener('input', e=>state.info.description=e.target.value);
-    document.getElementById('i-author').addEventListener('input', e=>state.info.author=e.target.value);
-    document.getElementById('i-color').addEventListener('change', e=>state.info.packColor=e.target.value);
-  }
-
-  // mobs
-  const addMob = document.getElementById('add-mob');
-  if(addMob) addMob.addEventListener('click', ()=>{ state.mobs.push(newMob()); renderAll(); });
-  document.querySelectorAll('#mobs, .card').forEach(()=>{});
-  document.querySelectorAll('.card').forEach(card=>{
-    const id = card.dataset.id;
-    const mob = state.mobs.find(m=>m.id===id);
-    const it = state.items.find(x=>x.id===id);
-    const j = state.jumpscares.find(x=>x.id===id);
-    if(mob){
-      card.querySelector('.m-name').addEventListener('input', e=>{mob.name=e.target.value;});
-      card.querySelector('.m-base').addEventListener('change', e=>{mob.baseType=e.target.value; renderAll();});
-      card.querySelector('.m-behavior').addEventListener('change', e=>{mob.behavior=e.target.value; renderAll();});
-      card.querySelector('.m-health').addEventListener('input', e=>{mob.health=e.target.value;});
-      card.querySelector('.m-damage').addEventListener('input', e=>{mob.damage=e.target.value;});
-      card.querySelector('.m-speed').addEventListener('input', e=>{mob.speed=e.target.value;});
-      card.querySelector('.m-sound').addEventListener('input', e=>{mob.sound=e.target.value;});
-      card.querySelector('.m-jumpscare').addEventListener('change', e=>{mob.jumpscareOnSpawn=e.target.value;});
-      card.querySelector('.m-geo-id').addEventListener('input', e=>{mob.geometryId=e.target.value;});
-      card.querySelector('.m-texture-file').addEventListener('change', async e=>{
-        const f = e.target.files[0]; if(!f) return;
-        mob.textureData = await readAsArrayBuffer(f);
-        mob.textureName = f.name;
-        renderAll();
-      });
-      card.querySelector('.m-model-file').addEventListener('change', async e=>{
-        const f = e.target.files[0]; if(!f) return;
-        const text = await readAsText(f);
-        mob.modelData = text;
-        mob.modelName = f.name;
-        if(!mob.geometryId){
-          try{
-            const parsed = JSON.parse(text);
-            const geo = (parsed['minecraft:geometry']||[])[0];
-            if(geo && geo.description && geo.description.identifier) mob.geometryId = geo.description.identifier;
-          }catch(err){ /* biarkan kosong, user isi manual */ }
-        }
-        renderAll();
-      });
-      card.querySelector('.m-sound-file').addEventListener('change', async e=>{
-        const f = e.target.files[0]; if(!f) return;
-        mob.soundData = await readAsArrayBuffer(f);
-        mob.soundName = f.name;
-        mob.soundExt = fileExt(f.name);
-        renderAll();
-      });
-      card.querySelector('.m-remove').addEventListener('click', ()=>{ state.mobs = state.mobs.filter(x=>x.id!==id); renderAll(); });
-      card.querySelectorAll('input[type=text],input[type=number]').forEach(inp=> inp.addEventListener('blur', renderCardLabel));
-    }
-    if(it){
-      card.querySelector('.it-name').addEventListener('input', e=>{it.name=e.target.value;});
-      card.querySelector('.it-base').addEventListener('input', e=>{it.baseItem=e.target.value;});
-      card.querySelector('.it-trigger').addEventListener('change', e=>{it.trigger=e.target.value; renderAll();});
-      card.querySelector('.it-cooldown').addEventListener('input', e=>{it.cooldownTicks=e.target.value;});
-      card.querySelector('.it-jumpscare').addEventListener('change', e=>{it.linkedJumpscare=e.target.value;});
-      card.querySelector('.it-icon-file').addEventListener('change', async e=>{
-        const f = e.target.files[0]; if(!f) return;
-        it.iconData = await readAsArrayBuffer(f);
-        it.iconName = f.name;
-        renderAll();
-      });
-      card.querySelector('.it-remove').addEventListener('click', ()=>{ state.items = state.items.filter(x=>x.id!==id); renderAll(); });
-    }
-    if(j){
-      card.querySelector('.j-name').addEventListener('input', e=>{j.name=e.target.value;});
-      card.querySelector('.j-sound').addEventListener('input', e=>{j.soundEvent=e.target.value;});
-      card.querySelector('.j-text').addEventListener('input', e=>{j.screenText=e.target.value;});
-      card.querySelector('.j-shake-i').addEventListener('input', e=>{j.shakeIntensity=e.target.value;});
-      card.querySelector('.j-shake-d').addEventListener('input', e=>{j.shakeDuration=e.target.value;});
-      card.querySelector('.j-cooldown').addEventListener('input', e=>{j.cooldown=e.target.value;});
-      card.querySelector('.j-particle').addEventListener('input', e=>{j.particle=e.target.value;});
-      card.querySelector('.j-sound-file').addEventListener('change', async e=>{
-        const f = e.target.files[0]; if(!f) return;
-        j.soundData = await readAsArrayBuffer(f);
-        j.soundName = f.name;
-        j.soundExt = fileExt(f.name);
-        renderAll();
-      });
-      card.querySelector('.j-remove').addEventListener('click', ()=>{ state.jumpscares = state.jumpscares.filter(x=>x.id!==id); renderAll(); });
-      card.querySelector('.j-test').addEventListener('click', ()=> testJumpscare(j));
-    }
-    const cmd = state.commands.find(x=>x.id===id);
-    if(cmd){
-      card.querySelector('.c-name').addEventListener('input', e=>{cmd.name=e.target.value;});
-      card.querySelector('.c-desc').addEventListener('input', e=>{cmd.description=e.target.value;});
-      card.querySelector('.c-lines').addEventListener('input', e=>{cmd.lines=e.target.value;});
-      card.querySelector('.c-slash').addEventListener('change', e=>{cmd.registerSlash=e.target.checked;});
-      card.querySelector('.c-remove').addEventListener('click', ()=>{ state.commands = state.commands.filter(x=>x.id!==id); renderAll(); });
-    }
+    setTimeout(() => {
+      scare.classList.remove('active');
+      reveal.classList.add('active');
+    }, 2200);
   });
 
-  const addItem = document.getElementById('add-item');
-  if(addItem) addItem.addEventListener('click', ()=>{ state.items.push(newItem()); renderAll(); });
-
-  const addJ = document.getElementById('add-jumpscare');
-  if(addJ) addJ.addEventListener('click', ()=>{ state.jumpscares.push(newJumpscare()); renderAll(); });
-
-  const addCmd = document.getElementById('add-command');
-  if(addCmd) addCmd.addEventListener('click', ()=>{ state.commands.push(newCommand()); renderAll(); });
-
-  const dl = document.getElementById('download-zip');
-  if(dl) dl.addEventListener('click', downloadZip);
-
-  if(document.getElementById('monitor')) startClock();
-}
-
-function renderCardLabel(){ /* no-op, live text not required to re-render */ }
-
-let clockStarted = false;
-function startClock(){
-  if(clockStarted) return; clockStarted = true;
-  let t=0;
-  setInterval(()=>{
-    t++;
-    const el = document.getElementById('timestamp');
-    if(!el) { clockStarted=false; return; }
-    const h=String(Math.floor(t/3600)).padStart(2,'0');
-    const m=String(Math.floor((t%3600)/60)).padStart(2,'0');
-    const s=String(t%60).padStart(2,'0');
-    el.textContent = `${h}:${m}:${s}`;
-  },1000);
-}
-
-function testJumpscare(j){
-  const monitor = document.getElementById('monitor');
-  const content = document.getElementById('monitor-content');
-  if(!monitor) return;
-  content.className='flash-txt';
-  content.textContent = (j.screenText||'...').toUpperCase();
-  monitor.classList.add('flashing');
-  playShock();
-  setTimeout(()=>{
-    monitor.classList.remove('flashing');
-    content.className='idle-txt';
-    content.textContent='— sinyal tenang —';
-  }, 900);
-}
-
-function playShock(){
-  try{
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const dur = 0.5;
-    const bufferSize = ctx.sampleRate*dur;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * (1 - i/bufferSize); }
-    const noise = ctx.createBufferSource(); noise.buffer = buffer;
-    const filter = ctx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=1200;
-    const gain = ctx.createGain(); gain.gain.setValueAtTime(0.5, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
-
-    const osc = ctx.createOscillator(); osc.type='sawtooth';
-    osc.frequency.setValueAtTime(220, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime+dur);
-    const oscGain = ctx.createGain(); oscGain.gain.setValueAtTime(0.35, ctx.currentTime); oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
-
-    noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-    osc.connect(oscGain); oscGain.connect(ctx.destination);
-    noise.start(); osc.start();
-    noise.stop(ctx.currentTime+dur); osc.stop(ctx.currentTime+dur);
-  }catch(e){ /* audio not available, ignore */ }
-}
-
-async function downloadZip(){
-  const btn = document.getElementById('download-zip');
-  const original = btn.textContent;
-  btn.textContent = 'Menyusun paket...';
-  btn.disabled = true;
-  try{
-    const zip = new JSZip();
-    const files = buildFiles();
-    Object.entries(files).forEach(([path, content])=> zip.file(path, content));
-
-    // binary custom assets (textures, models, sounds) — added directly since
-    // buildFiles() only returns text content used for the on-screen preview
-    state.mobs.forEach(m=>{
-      const mslug = slug(m.name);
-      if(m.textureData) zip.file(`resource_pack/textures/entity/${mslug}.png`, m.textureData);
-      if(m.modelData) zip.file(`resource_pack/models/entity/${mslug}.geo.json`, m.modelData);
-      if(m.soundData) zip.file(`resource_pack/sounds/dreadcraft/mob_${mslug}.${m.soundExt||'ogg'}`, m.soundData);
-    });
-    state.items.forEach(it=>{
-      if(it.iconData) zip.file(`resource_pack/textures/items/${slug(it.name)}.png`, it.iconData);
-    });
-    state.jumpscares.forEach(j=>{
-      if(j.soundData) zip.file(`resource_pack/sounds/dreadcraft/jumpscare_${slug(j.name)}.${j.soundExt||'ogg'}`, j.soundData);
-    });
-
-    const blob = await zip.generateAsync({type:'blob'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${slug(state.info.name)}_behavior_pack.zip`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } finally {
-    btn.textContent = original;
-    btn.disabled = false;
-  }
-}
-
-// seed with one example each so the tool feels alive on load
-state.jumpscares.push({ id:uid(), name:'Wajah di Kegelapan', soundEvent:'mob.wither.spawn', screenText:'DIA MELIHATMU', shakeIntensity:0.8, shakeDuration:1.2, particle:'minecraft:large_smoke', cooldown:5 });
-state.mobs.push({ id:uid(), name:'Pengintai Bayangan', baseType:'zombie', behavior:'hostile', health:20, damage:5, speed:1.0, sound:'mob.zombie.say', jumpscareOnSpawn: state.jumpscares[0].id });
-state.items.push({ id:uid(), name:'Lonceng Terkutuk', baseItem:'bell', trigger:'use', linkedJumpscare: state.jumpscares[0].id, cooldownTicks:100 });
-
-renderAll();
+  document.getElementById('again').addEventListener('click', () => {
+    reveal.classList.remove('active');
+    quizWrap.style.display = 'flex';
+    goTo('q1');
+  });
 </script>
 </body>
 </html>
